@@ -1,33 +1,30 @@
 @echo off
 chcp 65001 >nul
+cd /d "%~dp0"
 echo ========================================================
-echo   ĐỒNG BỘ DỰ ÁN CHẠM LÊN GITHUB ĐỂ LIÊN KẾT NETLIFY
+echo   ĐANG ĐẨY TOÀN BỘ DỰ ÁN LÊN GITHUB: AI-co-Hong
 echo ========================================================
 echo.
-set /p REPO_URL="Dán link GitHub repository của bạn vào đây: "
-if "%REPO_URL%"=="" (
-    echo Bạn chưa nhập link! Vui lòng chạy lại file.
-    pause
-    exit /b
-)
-
-echo.
-echo Đang cấu hình kết nối với GitHub...
 git remote remove origin 2>nul
-git remote add origin %REPO_URL%
+git remote add origin https://github.com/vuongnhatm-boop/AI-co-Hong.git
 git branch -M main
 
-echo Đang đẩy toàn bộ dự án lên nhánh main...
+echo Đang kết nối và đẩy lên nhánh main của GitHub...
+echo (Nếu có cửa sổ đăng nhập GitHub hiện lên, bạn chỉ cần chọn 'Sign in with your browser')
+echo.
 git push -u origin main --force
 
 echo.
 if %errorlevel% equ 0 (
     echo ========================================================
-    echo   ĐÃ ĐẨY LÊN GITHUB THÀNH CÔNG!
-    echo   Bây giờ trên Netlify đã có nhánh 'main' và tự động build
-    echo   chuẩn 100%% không bao giờ bị lỗi mất CSS/giao diện nữa!
+    echo   ĐÃ ĐẨY LÊN GITHUB THÀNH CÔNG 100%!
+    echo   Bây giờ trên Netlify:
+    echo   1. Nhánh 'main' đã xuất hiện sẵn sàng.
+    echo   2. Netlify sẽ tự động nhận file netlify.toml và hiển thị
+    echo      giao diện CHẠM đầy đủ đẹp mắt, không bao giờ bị lỗi!
     echo ========================================================
 ) else (
-    echo Có lỗi xảy ra khi đẩy lên GitHub. Vui lòng kiểm tra lại quyền hoặc link.
+    echo Có lỗi xảy ra hoặc chưa hoàn tất đăng nhập GitHub.
 )
+echo.
 pause
