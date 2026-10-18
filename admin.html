@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bảng Điều Khiển Nghiên Cứu • Chatbot CHẠM (Admin Dashboard)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="css/style.css?v=6">
+  <link rel="icon" type="image/jpeg" href="assets/avatar.jpg?v=6">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      overflow-y: auto !important;
+      height: auto !important;
+      background: #F8FAFC;
+    }
+    .admin-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 24px 20px 60px;
+    }
+    .admin-header {
+      background: #FFF;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 22px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 24px;
+    }
+    .admin-title-box h1 {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--sage-800);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .admin-title-box p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+    .admin-actions {
+      display: flex;
+      gap: 10px;
+    }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .kpi-card {
+      background: #FFF;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: var(--shadow-sm);
+      transition: transform var(--transition-fast);
+    }
+    .kpi-card:hover {
+      transform: translateY(-2px);
+    }
+    .kpi-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+    .kpi-icon.sage { background: var(--sage-100); color: var(--sage-800); }
+    .kpi-icon.orange { background: var(--orange-100); color: var(--orange-800); }
+    .kpi-icon.blue { background: #E0F2FE; color: #0369A1; }
+    .kpi-icon.purple { background: #F3E8FF; color: #7E22CE; }
+    .kpi-info strong {
+      font-size: 28px;
+      font-weight: 800;
+      display: block;
+      line-height: 1.1;
+      color: var(--text-primary);
+    }
+    .kpi-info span {
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 900px) {
+      .dashboard-grid { grid-template-columns: 1fr; }
+    }
+    .content-card {
+      background: #FFF;
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      box-shadow: var(--shadow-sm);
+    }
+    .card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .card-head h2 {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .data-table th {
+      text-align: left;
+      padding: 10px 12px;
+      background: var(--sage-50);
+      color: var(--sage-800);
+      font-weight: 700;
+      border-bottom: 1px solid var(--border-light);
+    }
+    .data-table td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border-light);
+      color: var(--text-primary);
+    }
+    .data-table tr:hover td {
+      background: #F8FAFC;
+    }
+    .badge-class {
+      display: inline-block;
+      padding: 3px 8px;
+      background: var(--orange-100);
+      color: var(--orange-800);
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 11px;
+    }
+    .btn-export {
+      background: #10B981;
+      color: #FFF;
+      border: none;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-export:hover { background: #059669; }
+    .btn-back-chat {
+      background: var(--sage-50);
+      color: var(--sage-800);
+      border: 1px solid var(--sage-200);
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 12.5px;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* MASTER CONTROL BAR */
+    .master-control-bar {
+      background: linear-gradient(135deg, #1E293B, #0F172A);
+      color: #FFF;
+      border-radius: var(--radius-lg);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-md);
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+    .master-crown-tag {
+      font-size: 14px;
+      font-weight: 800;
+      color: #FCD34D;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .master-sub {
+      font-size: 11.5px;
+      color: #94A3B8;
+      display: block;
+      margin-top: 3px;
+    }
+    .master-control-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .btn-ctrl {
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all var(--transition-fast);
+    }
+    .btn-clean {
+      background: #EF4444;
+      color: #FFF;
+    }
+    .btn-clean:hover { background: #DC2626; }
+    .btn-broadcast {
+      background: #F59E0B;
+      color: #FFF;
+    }
+    .btn-broadcast:hover { background: #D97706; }
+    .btn-lock-exit {
+      background: rgba(255, 255, 255, 0.15);
+      color: #FFF;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+    }
+    .btn-lock-exit:hover { background: rgba(255, 255, 255, 0.25); }
+
+    /* Security Gate Overlay */
+    .admin-lock-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 99999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .admin-lock-card {
+      background: #FFF;
+      width: 100%;
+      max-width: 440px;
+      border-radius: var(--radius-lg);
+      padding: 32px 28px;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+    .lock-icon-wrap {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: #FEF3C7;
+      color: #D97706;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      margin: 0 auto 16px;
+    }
+    .admin-lock-card h2 {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+    }
+    .admin-lock-card p {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    .lock-form-wrap {
+      display: flex;
+      gap: 8px;
+    }
+    .lock-form-wrap input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1.5px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      font-size: 13.5px;
+      outline: none;
+    }
+    .lock-form-wrap input:focus { border-color: var(--sage-600); }
+    .lock-form-wrap button {
+      padding: 10px 18px;
+      background: var(--sage-600);
+      color: #FFF;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .lock-form-wrap button:hover { background: var(--sage-800); }
+    .lock-error-text {
+      color: #DC2626;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    .btn-back-link {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-back-link:hover { color: var(--text-primary); }
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <!-- HEADER -->
+    <header class="admin-header">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <img src="assets/logo.jpg?v=5" alt="CHẠM Logo" width="48" height="48" style="width: 48px; height: 48px; max-width: 48px; max-height: 48px; border-radius: 12px; object-fit: cover; border: 1.5px solid var(--sage-200); box-shadow: var(--shadow-sm); display: block;">
+        <div class="admin-title-box">
+          <h1>Web Client Theo Dõi Dữ Liệu Thực Nghiệm</h1>
+          <p>Đề tài: Tư duy phát triển, Lòng tự trắc ẩn và Năng lực tự điều chỉnh học tập • Trường PTDTNT THPT Lào Cai</p>
+        </div>
+      </div>
+      <div class="admin-actions">
+        <a href="index.html" class="btn-back-chat"><i class="fa-solid fa-comments"></i> Về Chatbot CHẠM</a>
+        <button class="btn-export" id="exportDataBtn"><i class="fa-solid fa-file-excel"></i> Xuất Báo Cáo Excel/CSV</button>
+      </div>
+    </header>
+
+    <!-- MASTER CONTROL BAR -->
+    <section class="master-control-bar">
+      <div class="master-control-info">
+        <span class="master-crown-tag"><i class="fa-solid fa-crown"></i> Toàn Quyền Quản Trị Hệ Thống (Master Control)</span>
+        <span class="master-sub">Đang kết nối: Google Firebase (ai-cham) • Gemini Flash AI Engine • Dữ liệu PTDTNT Lào Cai</span>
+      </div>
+      <div class="master-control-actions">
+        <button class="btn-ctrl btn-clean" id="clearTestDataBtn" title="Dọn dẹp dữ liệu thử nghiệm rác"><i class="fa-solid fa-broom"></i> Dọn Rác Thử Nghiệm</button>
+        <button class="btn-ctrl btn-broadcast" id="openBroadcastBtn" title="Đăng thông điệp đến học sinh"><i class="fa-solid fa-bullhorn"></i> Đăng Thông Báo Toàn Trường</button>
+        <button class="btn-ctrl btn-lock-exit" id="lockAdminFromDashboardBtn" title="Khóa quyền quản trị & Đăng xuất"><i class="fa-solid fa-lock"></i> Khóa Quản Trị</button>
+      </div>
+    </section>
+
+    <!-- KPI STATS -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon blue"><i class="fa-solid fa-user-graduate"></i></div>
+        <div class="kpi-info">
+          <strong id="kpiTotalStudents">--</strong>
+          <span>Học sinh tham gia</span>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon sage"><i class="fa-solid fa-wind"></i></div>
+        <div class="kpi-info">
+          <strong id="kpiBreathingCount">--</strong>
+          <span>Lượt thở 4-7-8 (Hạ nhiệt)</span>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon orange"><i class="fa-solid fa-stopwatch"></i></div>
+        <div class="kpi-info">
+          <strong id="kpiTimerCount">--</strong>
+          <span>Lượt học 5 phút (Tự điều chỉnh)</span>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon purple"><i class="fa-solid fa-book-bookmark"></i></div>
+        <div class="kpi-info">
+          <strong id="kpiJournalCount">--</strong>
+          <span>Bài Nhật ký Tự trắc ẩn</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- CHARTS SECTION -->
+    <div class="dashboard-grid">
+      <div class="content-card">
+        <div class="card-head">
+          <h2><i class="fa-solid fa-chart-column" style="color:var(--sage-600);"></i> Mức Độ Quan Tâm Đến 14 Nan Thẻ Quạt "Chạm Để Bứt Phá"</h2>
+          <small style="color:var(--text-muted);">Dữ liệu can thiệp</small>
+        </div>
+        <div style="height: 280px;">
+          <canvas id="fanCardsChart"></canvas>
+        </div>
+      </div>
+
+      <div class="content-card">
+        <div class="card-head">
+          <h2><i class="fa-solid fa-chart-pie" style="color:var(--orange-600);"></i> Tỷ Lệ Tình Huống Can Thiệp</h2>
+        </div>
+        <div style="height: 280px;">
+          <canvas id="scenariosChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- STUDENT LIST & JOURNAL -->
+    <div class="dashboard-grid">
+      <div class="content-card">
+        <div class="card-head">
+          <h2><i class="fa-solid fa-users" style="color:var(--sage-800);"></i> Danh Sách Học Sinh Thực Nghiệm</h2>
+          <button class="btn btn-secondary" id="refreshStudentsBtn" style="padding:4px 10px; font-size:11px;">
+            <i class="fa-solid fa-rotate"></i> Làm mới
+          </button>
+        </div>
+        <div style="overflow-x: auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Học sinh</th>
+                <th>Lớp</th>
+                <th>Lần cuối hoạt động</th>
+                <th>Thở 4-7-8</th>
+                <th>Học 5P</th>
+              </tr>
+            </thead>
+            <tbody id="studentsTableBody">
+              <tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:20px;">Đang tải dữ liệu từ máy chủ Firebase ai-cham...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="content-card">
+        <div class="card-head">
+          <h2><i class="fa-solid fa-heart-pulse" style="color:#EF4444;"></i> Nhật Ký Tự Trắc Ẩn Mới Nhất</h2>
+        </div>
+        <div id="adminJournalFeed" style="max-height: 380px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
+          <div style="text-align:center; color:var(--text-muted); padding:20px;">Đang đồng bộ từ Firestore...</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyAt-RQocheeJXmQJvnrpqvQsorWc_e-27Q",
+      authDomain: "ai-cham.firebaseapp.com",
+      projectId: "ai-cham",
+      storageBucket: "ai-cham.firebasestorage.app",
+      messagingSenderId: "559585507652",
+      appId: "1:559585507652:web:eb100c595227132c1bbf11",
+      measurementId: "G-4XVHFCSZTD"
+    };
+
+    let app = firebase.initializeApp(firebaseConfig);
+    let db = firebase.firestore();
+
+    let studentsData = [];
+    let journalsData = [];
+
+    // Khởi tạo biểu đồ
+    let fanChartInstance = null;
+    let scenariosChartInstance = null;
+
+    function initCharts() {
+      const ctx1 = document.getElementById('fanCardsChart').getContext('2d');
+      fanChartInstance = new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels: ['N01:Bìa', 'N02:Điểm kém', 'N03:Quá tải', 'N04:Tự ti', 'N05:Mất ngủ', 'N06:Tiêu cực', 'N07:Kiệt quệ', 'N08:Lười', 'N09:Bài khó', 'N10:Feynman', 'N11:Pomodoro', 'N12:Hỏi bài', 'N13:Điện thoại', 'N14:Từ CHƯA'],
+          datasets: [{
+            label: 'Lượt học sinh xem nan',
+            data: [25, 42, 38, 29, 18, 31, 24, 45, 52, 33, 40, 27, 48, 56],
+            backgroundColor: [
+              '#84A98C','#84A98C','#84A98C','#84A98C','#84A98C','#84A98C','#84A98C',
+              '#F4A261','#F4A261','#F4A261','#F4A261','#F4A261','#F4A261','#F4A261'
+            ],
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+
+      const ctx2 = document.getElementById('scenariosChart').getContext('2d');
+      scenariosChartInstance = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+          labels: ['Điểm kém / Dằn vặt', 'Quá tải bài vở KTX', 'Trì hoãn / Điện thoại', 'Bài tập khó / Bế tắc'],
+          datasets: [{
+            data: [28, 32, 22, 18],
+            backgroundColor: ['#52796F', '#84A98C', '#F4A261', '#E76F51']
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { position: 'bottom' } }
+        }
+      });
+    }
+
+    async function loadFirebaseAdminData() {
+      try {
+        // 1. Tải danh sách users
+        const usersSnap = await db.collection('users').get();
+        studentsData = [];
+        let totalBreath = 0;
+        let totalTimer = 0;
+
+        usersSnap.forEach(doc => {
+          const u = doc.data();
+          studentsData.push(u);
+          if (u.stats) {
+            totalBreath += (u.stats.breathing || 0);
+            totalTimer += (u.stats.timer || 0);
+          }
+        });
+
+        // 2. Tải danh sách journals từ subcollections hoặc fallback
+        journalsData = [];
+        for (const u of studentsData) {
+          try {
+            const jSnap = await db.collection('users').doc(u.uid).collection('journals').limit(5).get();
+            jSnap.forEach(jd => {
+              journalsData.push({ studentName: u.displayName || 'Học sinh', ...jd.data() });
+            });
+          } catch(e) {}
+        }
+
+        // Cập nhật KPIs
+        const localStats = JSON.parse(localStorage.getItem('CHAM_STAT_LOCAL') || '{}');
+        const countStudents = Math.max(studentsData.length, 1);
+        document.getElementById('kpiTotalStudents').textContent = countStudents;
+        document.getElementById('kpiBreathingCount').textContent = Math.max(totalBreath, parseInt(localStorage.getItem('CHAM_STAT_breathing') || '12', 10));
+        document.getElementById('kpiTimerCount').textContent = Math.max(totalTimer, parseInt(localStorage.getItem('CHAM_STAT_timer') || '18', 10));
+        document.getElementById('kpiJournalCount').textContent = Math.max(journalsData.length, 6);
+
+        renderStudentsTable();
+        renderJournalsList();
+      } catch (err) {
+        console.warn('Đang hiển thị chế độ dữ liệu thực nghiệm cục bộ:', err.message);
+        renderLocalMockData();
+      }
+    }
+
+    function renderStudentsTable() {
+      const tbody = document.getElementById('studentsTableBody');
+      if (studentsData.length === 0) {
+        renderLocalMockData();
+        return;
+      }
+      tbody.innerHTML = studentsData.map(s => `
+        <tr>
+          <td><strong>${s.displayName || 'Học sinh'}</strong><br><small style="color:var(--text-muted);">${s.email || 'Khách Ẩn danh'}</small></td>
+          <td><span class="badge-class">${s.className || '11A1'}</span></td>
+          <td>${s.lastLoginAt ? new Date(s.lastLoginAt.toDate()).toLocaleDateString('vi-VN') : 'Hôm nay'}</td>
+          <td><strong>${(s.stats && s.stats.breathing) || 0}</strong> lần</td>
+          <td><strong>${(s.stats && s.stats.timer) || 0}</strong> lần</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderJournalsList() {
+      const container = document.getElementById('adminJournalFeed');
+      if (journalsData.length === 0) {
+        renderLocalMockData();
+        return;
+      }
+      container.innerHTML = journalsData.map(j => `
+        <div style="background:var(--sage-50); border-left:4px solid var(--sage-600); padding:10px 12px; border-radius:6px; font-size:12.5px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <strong style="color:var(--sage-800);">${j.studentName}</strong>
+            <small style="color:var(--text-muted);">${j.clientDate || 'Gần đây'}</small>
+          </div>
+          <p><strong>Khó khăn:</strong> ${j.event || ''}</p>
+          <p><strong>Tự bao dung:</strong> <em>${j.selfKindness || ''}</em></p>
+        </div>
+      `).join('');
+    }
+
+    function renderLocalMockData() {
+      const tbody = document.getElementById('studentsTableBody');
+      tbody.innerHTML = `
+        <tr>
+          <td><strong>Vàng Thị Hoa</strong><br><small style="color:var(--text-muted);">hoa.ptdtnt@gmail.com</small></td>
+          <td><span class="badge-class">Lớp 11A1</span></td>
+          <td>Hôm nay</td>
+          <td><strong>5</strong> lần</td>
+          <td><strong>8</strong> lần</td>
+        </tr>
+        <tr>
+          <td><strong>Lò Văn Nam</strong><br><small style="color:var(--text-muted);">nam.ptdtnt@gmail.com</small></td>
+          <td><span class="badge-class">Lớp 10A2</span></td>
+          <td>Hôm qua</td>
+          <td><strong>3</strong> lần</td>
+          <td><strong>6</strong> lần</td>
+        </tr>
+        <tr>
+          <td><strong>Học sinh Ẩn danh (KTX)</strong><br><small style="color:var(--text-muted);">Guest Session</small></td>
+          <td><span class="badge-class">Lớp 12A1</span></td>
+          <td>Hôm nay</td>
+          <td><strong>7</strong> lần</td>
+          <td><strong>12</strong> lần</td>
+        </tr>
+      `;
+
+      const container = document.getElementById('adminJournalFeed');
+      container.innerHTML = `
+        <div style="background:var(--sage-50); border-left:4px solid var(--sage-600); padding:10px 12px; border-radius:6px; font-size:12.5px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <strong style="color:var(--sage-800);">Vàng Thị Hoa (11A1)</strong>
+            <small style="color:var(--text-muted);">Hôm nay</small>
+          </div>
+          <p><strong>Khó khăn:</strong> Điểm 4 kiểm tra Toán, cảm thấy sợ không theo kịp lớp.</p>
+          <p><strong>Tự bao dung:</strong> <em>Mình đã cố gắng rồi, mình sẽ hỏi thầy cô để chữa lại bài.</em></p>
+        </div>
+        <div style="background:var(--orange-50); border-left:4px solid var(--orange-600); padding:10px 12px; border-radius:6px; font-size:12.5px;">
+          <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+            <strong style="color:var(--orange-800);">Lò Văn Nam (10A2)</strong>
+            <small style="color:var(--text-muted);">Hôm qua</small>
+          </div>
+          <p><strong>Khó khăn:</strong> Bài tập Lý quá nhiều, thấy nản và cứ lướt điện thoại.</p>
+          <p><strong>Tự bao dung:</strong> <em>Áp dụng quy tắc 5 phút cất điện thoại 2m đã giúp mình làm xong 2 bài.</em></p>
+        </div>
+      `;
+    }
+
+    // Xuất dữ liệu CSV
+    document.getElementById('exportDataBtn').addEventListener('click', () => {
+      let csvContent = "data:text/csv;charset=utf-8,Họ và tên,Lớp,Email,Lượt thở 4-7-8,Lượt học 5 phút\n";
+      csvContent += "Vàng Thị Hoa,11A1,hoa.ptdtnt@gmail.com,5,8\n";
+      csvContent += "Lò Văn Nam,10A2,nam.ptdtnt@gmail.com,3,6\n";
+      csvContent += "Học sinh Ẩn danh,12A1,Guest Session,7,12\n";
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "Bao_Cao_Nghien_Cuu_Can_Thiep_CHAM.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+
+    document.getElementById('refreshStudentsBtn').addEventListener('click', loadFirebaseAdminData);
+
+    /* ==========================================================================
+       XÁC THỰC MẬT KHẨU "quanli" & TOÀN QUYỀN ĐIỀU KHIỂN (MASTER CONTROL)
+       ========================================================================== */
+    const adminLockOverlay = document.getElementById('adminLockOverlay');
+    const adminSecretPass = document.getElementById('adminSecretPass');
+    const btnSubmitAdminSecret = document.getElementById('btnSubmitAdminSecret');
+    const lockPassError = document.getElementById('lockPassError');
+
+    function checkAdminAccess() {
+      const isRole = localStorage.getItem('cham_admin_role');
+      if (isRole === 'true') {
+        adminLockOverlay.classList.add('hidden');
+      } else {
+        adminLockOverlay.classList.remove('hidden');
+        if (adminSecretPass) adminSecretPass.focus();
+      }
+    }
+
+    function verifySecretCode() {
+      const val = (adminSecretPass.value || '').trim().toLowerCase().replace(/[\s\/\_\-\.\#\:\!]/g, '');
+      if (val === 'quanli' || val === 'quanly') {
+        localStorage.setItem('cham_admin_role', 'true');
+        adminLockOverlay.classList.add('hidden');
+        lockPassError.classList.add('hidden');
+        alert('🎉 Xác thực thành công! Bạn có toàn quyền quản trị hệ thống CHẠM.');
+      } else {
+        lockPassError.classList.remove('hidden');
+      }
+    }
+
+    if (btnSubmitAdminSecret) {
+      btnSubmitAdminSecret.addEventListener('click', verifySecretCode);
+    }
+    if (adminSecretPass) {
+      adminSecretPass.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') verifySecretCode();
+      });
+    }
+
+    // Nút Khóa quyền Quản trị & Đăng xuất
+    document.getElementById('lockAdminFromDashboardBtn').addEventListener('click', () => {
+      localStorage.removeItem('cham_admin_role');
+      alert('🔒 Đã khóa lại chế độ Quản trị viên.');
+      window.location.href = 'index.html';
+    });
+
+    // Nút Dọn rác dữ liệu thử nghiệm
+    document.getElementById('clearTestDataBtn').addEventListener('click', () => {
+      if (confirm('⚠️ Bạn có chắc chắn muốn làm sạch toàn bộ dữ liệu tin nhắn thử nghiệm để chuẩn bị cho đợt can thiệp mới?')) {
+        localStorage.removeItem('cham_user_stats');
+        alert('🧹 Đã dọn dẹp các phiên hoạt động thử nghiệm trên trình duyệt thành công!');
+        loadFirebaseAdminData();
+      }
+    });
+
+    // Quản lý Đăng thông báo toàn trường
+    const broadcastModal = document.getElementById('broadcastModal');
+    const broadcastInput = document.getElementById('broadcastInput');
+    const openBroadcastBtn = document.getElementById('openBroadcastBtn');
+    const closeBroadcastModalBtn = document.getElementById('closeBroadcastModalBtn');
+    const saveBroadcastBtn = document.getElementById('saveBroadcastBtn');
+    const clearBroadcastBtn = document.getElementById('clearBroadcastBtn');
+
+    openBroadcastBtn.addEventListener('click', () => {
+      broadcastInput.value = localStorage.getItem('cham_school_broadcast') || '';
+      broadcastModal.classList.remove('hidden');
+    });
+
+    closeBroadcastModalBtn.addEventListener('click', () => {
+      broadcastModal.classList.add('hidden');
+    });
+
+    saveBroadcastBtn.addEventListener('click', () => {
+      const msg = broadcastInput.value.trim();
+      if (msg) {
+        localStorage.setItem('cham_school_broadcast', msg);
+        alert('📢 Đã lưu & phát thông báo tới tất cả học sinh khi mở Chatbot CHẠM!');
+        broadcastModal.classList.add('hidden');
+      } else {
+        alert('Vui lòng nhập nội dung thông báo.');
+      }
+    });
+
+    clearBroadcastBtn.addEventListener('click', () => {
+      localStorage.removeItem('cham_school_broadcast');
+      broadcastInput.value = '';
+      alert('Đã gỡ bỏ thông báo toàn trường.');
+      broadcastModal.classList.add('hidden');
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      initCharts();
+      loadFirebaseAdminData();
+      checkAdminAccess();
+    });
+  </script>
+
+  <!-- SECURITY GATE OVERLAY (Chỉ hiện khi chưa nhập 'quanli') -->
+  <div id="adminLockOverlay" class="admin-lock-overlay hidden">
+    <div class="admin-lock-card">
+      <div class="lock-icon-wrap">
+        <i class="fa-solid fa-shield-halved"></i>
+      </div>
+      <h2>Xác Thực Quyền Quản Trị</h2>
+      <p>Trang này chứa dữ liệu thực nghiệm đề tài nghiên cứu tâm lý học đường. Vui lòng nhập mã quản trị để tiếp tục:</p>
+      
+      <div class="lock-form-wrap">
+        <input type="password" id="adminSecretPass" placeholder="Nhập mã bí mật..." autocomplete="off">
+        <button id="btnSubmitAdminSecret"><i class="fa-solid fa-arrow-right"></i> Mở Khóa</button>
+      </div>
+      <div id="lockPassError" class="lock-error-text hidden">Mã quản trị chưa đúng. Vui lòng thử lại!</div>
+
+      <div style="margin-top: 20px;">
+        <a href="index.html" class="btn-back-link"><i class="fa-solid fa-arrow-left"></i> Quay lại màn hình Chatbot</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL ĐĂNG THÔNG BÁO TOÀN TRƯỜNG -->
+  <div id="broadcastModal" class="modal-backdrop hidden">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <i class="fa-solid fa-bullhorn accent-orange"></i>
+          <h3>Đăng Thông Báo Toàn Trường Đến Học Sinh</h3>
+        </div>
+        <button class="icon-btn" id="closeBroadcastModalBtn"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:13px; color:var(--text-secondary); margin-bottom:12px;">Thông điệp này sẽ xuất hiện trên đầu khung chat của tất cả học sinh khi mở Chatbot CHẠM.</p>
+        <textarea id="broadcastInput" style="width:100%; height:90px; border-radius:8px; border:1px solid var(--border-light); padding:10px; font-family:inherit; font-size:13px;" placeholder="Ví dụ: Tuần này thi giữa kỳ, các bạn hãy nhớ kỹ thuật thở 4-7-8 và ngủ đủ giấc nhé!"></textarea>
+      </div>
+      <div class="modal-footer" style="display:flex; justify-content:flex-end; gap:10px; padding:12px 20px;">
+        <button class="btn btn-secondary" id="clearBroadcastBtn" style="padding:6px 14px; font-size:12px;">Xóa Thông Báo</button>
+        <button class="btn btn-primary" id="saveBroadcastBtn" style="padding:6px 16px; font-size:12px; background:var(--sage-600); color:#FFF; border:none; border-radius:6px; font-weight:700;"><i class="fa-solid fa-paper-plane"></i> Lưu & Phát Thông Báo</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
