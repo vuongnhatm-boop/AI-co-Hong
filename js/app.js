@@ -47,8 +47,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const toggleShowKeyBtn = document.getElementById('toggleShowKeyBtn');
 
   // API Key & Model Configuration
-  const DEFAULT_API_KEY = 'AQ.Ab8RN6L8Z51P_Dre-ujROkl_LZfSQ-XjKlAIOM1w_usADN0CLQ';
-  let activeApiKey = localStorage.getItem('CHAM_GEMINI_API_KEY') || DEFAULT_API_KEY;
+  let activeApiKey = localStorage.getItem('CHAM_GEMINI_API_KEY') || '';
+  if (activeApiKey && activeApiKey.startsWith('AQ.')) {
+    activeApiKey = '';
+    localStorage.removeItem('CHAM_GEMINI_API_KEY');
+  }
   if (apiKeyInput) apiKeyInput.value = activeApiKey;
 
   // Fallback models order
@@ -77,6 +80,11 @@ document.addEventListener('DOMContentLoaded', () => {
      1. GỌI GOOGLE GEMINI API TRỰC TIẾP
      ========================================================================== */
   async function callGeminiApi(userPrompt) {
+    if (!activeApiKey) {
+      updateAiBadge(false, 'Trí tuệ CHẠM (Nội bộ)');
+      return { success: false, reason: 'no_key' };
+    }
+
     conversationHistory.push({
       role: 'user',
       parts: [{ text: userPrompt }]
@@ -139,8 +147,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    console.error('All Gemini models failed, falling back to local engine. Last error:', lastError);
-    updateAiBadge(false, 'Ngoại tuyến (Quy tắc nội bộ)');
+    console.warn('All Gemini models failed, falling back to local engine. Last error:', lastError);
+    updateAiBadge(false, 'Trí tuệ CHẠM (Nội bộ)');
     return { success: false, error: lastError };
   }
 
@@ -180,31 +188,33 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
     } else {
+      // Loại bỏ khoảng trắng thụt lề đầu dòng để tránh marked hiểu nhầm thành khối code <pre><code>
+      const cleanContent = rawContent.replace(/^[ \t]+/gm, '');
       let formattedHtml = '';
       if (typeof window.marked !== 'undefined' && typeof window.marked.parse === 'function') {
-        formattedHtml = window.marked.parse(rawContent);
+        formattedHtml = window.marked.parse(cleanContent);
       } else {
-        formattedHtml = rawContent;
+        formattedHtml = cleanContent;
       }
 
       let dynamicActionButtons = '';
       const lower = rawContent.toLowerCase();
-      if (lower.includes('4-7-8') || lower.includes('thở')) {
+      if ((lower.includes('4-7-8') || lower.includes('thở')) && !formattedHtml.includes('openBreathingModal')) {
         dynamicActionButtons += `<button class="msg-action-btn" onclick="openBreathingModal()"><i class="fa-solid fa-wind"></i> Mở bài tập Thở 4-7-8</button> `;
       }
-      if (lower.includes('5 phút') || lower.includes('trì hoãn') || lower.includes('sức ỳ')) {
+      if ((lower.includes('5 phút') || lower.includes('trì hoãn') || lower.includes('sức ỳ')) && !formattedHtml.includes('openTimerModal')) {
         dynamicActionButtons += `<button class="msg-action-btn orange-act" onclick="openTimerModal()"><i class="fa-solid fa-stopwatch"></i> Bật hẹn giờ 5 phút</button> `;
       }
-      if (lower.includes('nan 02') || lower.includes('nan 2')) {
+      if ((lower.includes('nan 02') || lower.includes('nan 2')) && !formattedHtml.includes('openFanDetail(2)')) {
         dynamicActionButtons += `<button class="msg-action-btn" onclick="openFanDetail(2)"><i class="fa-solid fa-leaf"></i> Mở Nan 02: Tự tha thứ</button> `;
       }
-      if (lower.includes('nan 09') || lower.includes('nan 9')) {
+      if ((lower.includes('nan 09') || lower.includes('nan 9')) && !formattedHtml.includes('openFanDetail(9)')) {
         dynamicActionButtons += `<button class="msg-action-btn orange-act" onclick="openFanDetail(9)"><i class="fa-solid fa-lightbulb"></i> Mở Nan 09: Đọc đảo ngược</button> `;
       }
-      if (lower.includes('nan 10') || lower.includes('feynman')) {
+      if ((lower.includes('nan 10') || lower.includes('feynman')) && !formattedHtml.includes('openFanDetail(10)')) {
         dynamicActionButtons += `<button class="msg-action-btn orange-act" onclick="openFanDetail(10)"><i class="fa-solid fa-chalkboard-user"></i> Mở Nan 10: Feynman</button> `;
       }
-      if (lower.includes('nan 11') || lower.includes('pomodoro')) {
+      if ((lower.includes('nan 11') || lower.includes('pomodoro') || lower.includes('top 3')) && !formattedHtml.includes('openFanDetail(11)')) {
         dynamicActionButtons += `<button class="msg-action-btn orange-act" onclick="openFanDetail(11)"><i class="fa-solid fa-clock"></i> Mở Nan 11: Top 3 & Pomodoro</button> `;
       }
 
