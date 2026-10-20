@@ -288,29 +288,51 @@
 
   // Lưu một bài Nhật ký Tự trắc ẩn (Self-Compassion Journal)
   async function saveJournalEntry(eventText, commonHumanityText, selfKindnessText) {
-    if (!db) throw new Error('Chưa kết nối được với cơ sở dữ liệu đám mây');
-    const targetUid = currentUser ? currentUser.uid : sessionId;
-
+    const entryId = 'journal_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
     const entry = {
+      id: entryId,
       event: eventText,
       commonHumanity: commonHumanityText,
       selfKindness: selfKindnessText,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      createdAtClient: Date.now(),
       clientDate: new Date().toLocaleDateString('vi-VN', {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
       })
     };
 
-    if (currentUser) {
-      await db.collection('users')
-        .doc(currentUser.uid)
-        .collection('journals')
-        .add(entry);
-    } else {
-      await db.collection('conversations')
-        .doc(sessionId)
-        .collection('journals')
-        .add(entry);
+    // 1. Luôn lưu vào LocalStorage trước (0ms, an toàn tuyệt đối không bao giờ mất)
+    try {
+      let localJournals = JSON.parse(localStorage.getItem('CHAM_JOURNAL_ENTRIES') || '[]');
+      localJournals.unshift(entry);
+      if (localJournals.length > 50) localJournals = localJournals.slice(0, 50);
+      localStorage.setItem('CHAM_JOURNAL_ENTRIES', JSON.stringify(localJournals));
+    } catch (e) {
+      console.warn('Lỗi lưu LocalStorage nhật ký:', e);
+    }
+
+    // 2. Đồng bộ lên Firebase Firestore nếu khả dụng
+    if (db) {
+      try {
+        const firestoreEntry = {
+          ...entry,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        if (currentUser) {
+          await db.collection('users')
+            .doc(currentUser.uid)
+            .collection('journals')
+            .doc(entryId)
+            .set(firestoreEntry);
+        } else {
+          await db.collection('conversations')
+            .doc(sessionId)
+            .collection('journals')
+            .doc(entryId)
+            .set(firestoreEntry);
+        }
+      } catch (err) {
+        console.warn('Lỗi đồng bộ Firestore nhật ký:', err.message);
+      }
     }
 
     logEvent('save_journal_entry');
@@ -319,22 +341,38 @@
 
   // Lấy danh sách các bài Nhật ký Tự trắc ẩn của người dùng
   async function getJournalEntries() {
-    if (!db) return [];
+    let localList = [];
+    try {
+      localList = JSON.parse(localStorage.getItem('CHAM_JOURNAL_ENTRIES') || '[]');
+    } catch (e) { localList = []; }
+
+    if (!db) return localList;
+
     try {
       const colRef = currentUser 
         ? db.collection('users').doc(currentUser.uid).collection('journals')
         : db.collection('conversations').doc(sessionId).collection('journals');
 
       const snapshot = await colRef.orderBy('createdAt', 'desc').limit(50).get();
-      const list = [];
-      snapshot.forEach(doc => {
-        list.push({ id: doc.id, ...doc.data() });
-      });
-      return list;
+      if (!snapshot.empty) {
+        const cloudList = [];
+        snapshot.forEach(doc => {
+          cloudList.push({ id: doc.id, ...doc.data() });
+        });
+        // Hợp nhất dữ liệu
+        const map = new Map();
+        cloudList.forEach(item => map.set(item.id, item));
+        localList.forEach(item => {
+          if (!map.has(item.id)) map.set(item.id, item);
+        });
+        const merged = Array.from(map.values());
+        localStorage.setItem('CHAM_JOURNAL_ENTRIES', JSON.stringify(merged));
+        return merged;
+      }
     } catch (err) {
-      console.warn('Lỗi lấy bài nhật ký:', err.message);
-      return [];
+      console.warn('Lỗi lấy bài nhật ký Firestore (sử dụng dữ liệu cục bộ):', err.message);
     }
+    return localList;
   }
 
   // Cập nhật thống kê rèn luyện cá nhân
@@ -524,19 +562,57 @@
     saveJournalEntry,
     getJournalEntries,
     recordUserStat,
-    getLocalStats
+    getLocalStats,
+    checkFirestoreStatus
   };
 
+  // Kiểm tra tính sẵn sàng của Cloud Firestore
+  async function checkFirestoreStatus() {
+    if (!db) return { ok: false, error: 'Chưa nạp thư viện Firestore' };
+    try {
+      await db.collection('_health').doc('ping').get();
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err.message, code: err.code };
+    }
+  }
+
   // Cập nhật trạng thái hiển thị máy chủ ban đầu
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     const firebasePill = document.getElementById('firebaseStatusPill');
     const firebaseText = document.getElementById('firebaseStatusText');
-    if (firebasePill && firebaseText) {
-      if (isFirebaseReady) {
-        firebaseText.textContent = 'Firebase: ai-cham';
-        firebasePill.title = 'Máy chủ Firebase Cloud (ai-cham) đã kết nối: Xác thực tài khoản & Cloud Firestore sẵn sàng.';
-        firebasePill.classList.add('online');
-      }
+    const historySyncIndicator = document.getElementById('historySyncIndicator');
+    const historySyncText = document.getElementById('historySyncText');
+
+    if (db) {
+      try {
+        const check = await checkFirestoreStatus();
+        if (check.ok) {
+          if (firebaseText) firebaseText.textContent = 'Firebase: ai-cham';
+          if (firebasePill) {
+            firebasePill.classList.add('online');
+            firebasePill.title = 'Máy chủ Firebase Cloud (ai-cham) đang lưu trữ hoàn hảo.';
+          }
+          if (historySyncText) historySyncText.textContent = 'Cloud Firestore (Online)';
+          if (historySyncIndicator) historySyncIndicator.style.color = '#059669';
+        } else {
+          console.warn('⚠️ Cloud Firestore chưa được kích hoạt trên Firebase Console:', check.error);
+          if (firebaseText) firebaseText.textContent = 'Firebase: Cần bật Firestore';
+          if (firebasePill) {
+            firebasePill.classList.remove('online');
+            firebasePill.title = 'Nhấp vào đây để mở Firebase Console bật Cloud Firestore Database.';
+            firebasePill.style.cursor = 'pointer';
+            firebasePill.onclick = () => window.open('https://console.firebase.google.com/project/ai-cham/firestore', '_blank');
+          }
+          if (historySyncText) historySyncText.textContent = 'Cần bật Firestore';
+          if (historySyncIndicator) {
+            historySyncIndicator.style.color = '#D97706';
+            historySyncIndicator.title = 'Nhấp vào đây để mở Firebase Console bật Cloud Firestore Database';
+            historySyncIndicator.style.cursor = 'pointer';
+            historySyncIndicator.onclick = () => window.open('https://console.firebase.google.com/project/ai-cham/firestore', '_blank');
+          }
+        }
+      } catch (e) {}
     }
 
     logEvent('app_opened', { user_agent: navigator.userAgent });
