@@ -205,10 +205,16 @@ document.addEventListener('DOMContentLoaded', () => {
       if ((lower.includes('5 phút') || lower.includes('trì hoãn') || lower.includes('sức ỳ')) && !formattedHtml.includes('openTimerModal')) {
         dynamicActionButtons += `<button class="msg-action-btn orange-act" onclick="openTimerModal()"><i class="fa-solid fa-stopwatch"></i> Bật hẹn giờ 5 phút</button> `;
       }
-      if ((lower.includes('nan 02') || lower.includes('nan 2')) && !formattedHtml.includes('openFanDetail(2)')) {
+      if ((lower.includes('nan 02') || lower.includes('nan 2') || lower.includes('tự tha thứ')) && !formattedHtml.includes('openFanDetail(2)')) {
         dynamicActionButtons += `<button class="msg-action-btn" onclick="openFanDetail(2)"><i class="fa-solid fa-leaf"></i> Mở Nan 02: Tự tha thứ</button> `;
       }
-      if ((lower.includes('nan 09') || lower.includes('nan 9')) && !formattedHtml.includes('openFanDetail(9)')) {
+      if ((lower.includes('nan 04') || lower.includes('nan 4') || lower.includes('tiến bộ 1%')) && !formattedHtml.includes('openFanDetail(4)')) {
+        dynamicActionButtons += `<button class="msg-action-btn" onclick="openFanDetail(4)"><i class="fa-solid fa-seedling"></i> Mở Nan 04: Tiến bộ 1%</button> `;
+      }
+      if ((lower.includes('nan 05') || lower.includes('nan 5') || lower.includes('body scan')) && !formattedHtml.includes('openFanDetail(5)')) {
+        dynamicActionButtons += `<button class="msg-action-btn" onclick="openFanDetail(5)"><i class="fa-solid fa-moon"></i> Mở Nan 05: Thư giãn ngủ ngon</button> `;
+      }
+      if ((lower.includes('nan 09') || lower.includes('nan 9') || lower.includes('đọc đảo ngược')) && !formattedHtml.includes('openFanDetail(9)')) {
         dynamicActionButtons += `<button class="msg-action-btn orange-act" onclick="openFanDetail(9)"><i class="fa-solid fa-lightbulb"></i> Mở Nan 09: Đọc đảo ngược</button> `;
       }
       if ((lower.includes('nan 10') || lower.includes('feynman')) && !formattedHtml.includes('openFanDetail(10)')) {
@@ -216,6 +222,18 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if ((lower.includes('nan 11') || lower.includes('pomodoro') || lower.includes('top 3')) && !formattedHtml.includes('openFanDetail(11)')) {
         dynamicActionButtons += `<button class="msg-action-btn orange-act" onclick="openFanDetail(11)"><i class="fa-solid fa-clock"></i> Mở Nan 11: Top 3 & Pomodoro</button> `;
+      }
+      if ((lower.includes('nan 13') || lower.includes('cách ly 2')) && !formattedHtml.includes('openFanDetail(13)')) {
+        dynamicActionButtons += `<button class="msg-action-btn orange-act" onclick="openFanDetail(13)"><i class="fa-solid fa-mobile-screen"></i> Mở Nan 13: Cách ly điện thoại</button> `;
+      }
+      if ((lower.includes('nan 14') || lower.includes('sức mạnh từ')) && !formattedHtml.includes('openFanDetail(14)')) {
+        dynamicActionButtons += `<button class="msg-action-btn orange-act" onclick="openFanDetail(14)"><i class="fa-solid fa-brain"></i> Mở Nan 14: Sức mạnh từ CHƯA</button> `;
+      }
+      if ((lower.includes('nhật ký') || lower.includes('tự trắc ẩn')) && !formattedHtml.includes('openJournalModal')) {
+        dynamicActionButtons += `<button class="msg-action-btn" onclick="openJournalModal()"><i class="fa-solid fa-book-bookmark"></i> Mở Sổ Nhật Ký Tự Trắc Ẩn</button> `;
+      }
+      if ((lower.includes('111') || lower.includes('1900 599 930') || lower.includes('hỗ trợ khẩn cấp') || lower.includes('hotline')) && !formattedHtml.includes('openSosModal')) {
+        dynamicActionButtons += `<button class="msg-action-btn" style="background:#FEE2E2; color:#B91C1C; border-color:#FCA5A5;" onclick="openSosModal()"><i class="fa-solid fa-phone-volume"></i> Mở Hotline Khẩn Cấp (111 / 1900 599 930)</button> `;
       }
 
       if (dynamicActionButtons) {
@@ -1207,12 +1225,16 @@ document.addEventListener('DOMContentLoaded', () => {
     `).join('');
   }
 
-  if (openJournalBtn) {
-    openJournalBtn.addEventListener('click', () => {
+  window.openJournalModal = function() {
+    if (journalModal) {
       if (userDropdownMenu) userDropdownMenu.classList.add('hidden');
       journalModal.classList.remove('hidden');
       refreshJournalUI();
-    });
+    }
+  };
+
+  if (openJournalBtn) {
+    openJournalBtn.addEventListener('click', openJournalModal);
   }
 
   if (closeJournalModal) {
