@@ -54,13 +54,12 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   if (apiKeyInput) apiKeyInput.value = activeApiKey;
 
-  // Fallback models order
+  // Official Google Gemini models order
   const GEMINI_MODELS = [
-    'gemini-flash-lite-latest',
-    'gemini-2.5-flash-lite',
-    'gemini-3.1-flash-lite',
-    'gemini-flash-latest',
-    'gemini-3.8-flash'
+    'gemini-1.5-flash',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash-8b',
+    'gemini-1.5-pro'
   ];
 
   // Conversation memory for multi-turn chat
