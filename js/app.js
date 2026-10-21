@@ -505,9 +505,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     fanDetailModal.classList.remove('hidden');
 
-    // Ghi nhận sự kiện học sinh xem nan thẻ quạt lên Firebase
+    // Ghi nhận sự kiện học sinh xem nan thẻ quạt lên LocalStorage & Firebase
+    try {
+      const fanClicks = JSON.parse(localStorage.getItem('CHAM_FAN_CLICKS') || '{}');
+      fanClicks[currentFanCardIndex] = (fanClicks[currentFanCardIndex] || 0) + 1;
+      localStorage.setItem('CHAM_FAN_CLICKS', JSON.stringify(fanClicks));
+    } catch(e) {}
+
     if (window.chamFirebase && typeof window.chamFirebase.logEvent === 'function') {
       window.chamFirebase.logEvent('view_fan_card', { card_id: currentFanCardIndex, card_title: data.title, type: data.type });
+    }
+    if (window.chamFirebase && typeof window.chamFirebase.recordUserStat === 'function') {
+      window.chamFirebase.recordUserStat('fan_' + currentFanCardIndex);
     }
   };
 
@@ -695,6 +704,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
       if (window.chamFirebase && typeof window.chamFirebase.logEvent === 'function') {
         window.chamFirebase.logEvent('start_5min_timer');
+      }
+      if (window.chamFirebase && typeof window.chamFirebase.recordUserStat === 'function') {
+        window.chamFirebase.recordUserStat('timer');
       }
 
       timerInterval = setInterval(() => {
