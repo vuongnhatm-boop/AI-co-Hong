@@ -944,11 +944,17 @@
       broadcastModal.classList.add('hidden');
     });
 
-    document.addEventListener('DOMContentLoaded', () => {
-      initCharts();
+    function initAdminApp() {
+      try { initCharts(); } catch(e) { console.warn('Charts init warning:', e); }
       loadFirebaseAdminData();
       checkAdminAccess();
-    });
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initAdminApp);
+    } else {
+      initAdminApp();
+    }
   </script>
 
   <!-- SECURITY GATE OVERLAY (Chỉ hiện khi chưa nhập 'quanli') -->
