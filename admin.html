@@ -474,11 +474,44 @@
       measurementId: "G-4XVHFCSZTD"
     };
 
-    let app = firebase.initializeApp(firebaseConfig);
-    let db = firebase.firestore();
+    let app = null;
+    let db = null;
+    try {
+      if (typeof firebase !== 'undefined') {
+        app = !firebase.apps.length ? firebase.initializeApp(firebaseConfig) : firebase.app();
+        db = firebase.firestore();
+      }
+    } catch(e) {
+      console.warn('Firebase init warning:', e);
+    }
 
     let studentsData = [];
     let journalsData = [];
+
+    // Helper: Giới hạn thời gian truy vấn Cloud (Tránh bị treo mạng vô hạn)
+    function withTimeout(promise, ms = 2500) {
+      return Promise.race([
+        promise,
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Thao tác Cloud quá hạn (Timeout)')), ms))
+      ]);
+    }
+
+    // Cập nhật nhãn trạng thái kết nối
+    function updateCloudStatusBadge(isCloudConnected) {
+      const badge = document.getElementById('firestoreStatusBadge');
+      if (!badge) return;
+      if (isCloudConnected) {
+        badge.innerHTML = '<i class="fa-solid fa-cloud-arrow-up" style="color:#10B981;"></i> Đã kết nối Cloud Firestore';
+        badge.style.color = '#047857';
+        badge.style.borderColor = '#A7F3D0';
+        badge.style.background = '#ECFDF5';
+      } else {
+        badge.innerHTML = '<i class="fa-solid fa-hard-drive" style="color:#D97706;"></i> Lưu trữ Trực tiếp Cục bộ (0ms & LocalStorage)';
+        badge.style.color = '#B45309';
+        badge.style.borderColor = '#FDE68A';
+        badge.style.background = '#FFFBEB';
+      }
+    }
 
     // Khởi tạo biểu đồ
     let fanChartInstance = null;
@@ -526,14 +559,8 @@
       });
     }
 
-    async function loadFirebaseAdminData() {
-      studentsData = [];
-      journalsData = [];
-      let totalBreath = 0;
-      let totalTimer = 0;
-      let cloudConnected = false;
-
-      // 1. Đọc dữ liệu từ LocalStorage
+    // HIỂN THỊ NGAY DỮ LIỆU CỤC BỘ TRONG 0MS (Không để người dùng chờ '--')
+    function renderImmediateLocalData() {
       let localSessions = [];
       try {
         localSessions = JSON.parse(localStorage.getItem('CHAM_CHAT_SESSIONS') || '[]');
@@ -551,105 +578,41 @@
         localFanClicks = JSON.parse(localStorage.getItem('CHAM_FAN_CLICKS') || '{}');
       } catch(e) { localFanClicks = {}; }
 
-      // 2. Thử truy vấn Google Cloud Firestore
-      try {
-        if (db) {
-          // A. Lấy danh sách users đã đăng ký
-          const usersSnap = await db.collection('users').get();
-          cloudConnected = true;
-          usersSnap.forEach(doc => {
-            const u = doc.data();
-            const b = (u.stats && u.stats.breathing) || 0;
-            const t = (u.stats && u.stats.timer) || 0;
-            totalBreath += b;
-            totalTimer += t;
-            studentsData.push({
-              id: doc.id,
-              displayName: u.displayName || 'Học sinh CHẠM',
-              email: u.email || 'Học sinh Đăng ký',
-              className: u.className || 'PTDTNT THPT Lào Cai',
-              lastActive: u.lastActive || u.lastLoginAt,
-              breathing: b,
-              timer: t,
-              type: 'registered'
-            });
-          });
+      studentsData = [];
+      journalsData = [];
 
-          // B. Lấy các bài nhật ký từ Cloud
-          for (const s of studentsData) {
-            try {
-              const jSnap = await db.collection('users').doc(s.id).collection('journals').limit(5).get();
-              jSnap.forEach(jd => {
-                journalsData.push({ studentName: s.displayName, ...jd.data(), source: 'cloud' });
-              });
-            } catch(e) {}
-          }
-
-          // C. Lấy thêm các phiên hội thoại từ Cloud conversations
-          try {
-            const convSnap = await db.collection('conversations').limit(20).get();
-            convSnap.forEach(doc => {
-              const c = doc.data();
-              const exists = studentsData.some(st => st.id === c.id);
-              if (!exists) {
-                studentsData.push({
-                  id: c.id,
-                  displayName: c.title || 'Phiên Trò Chuyện Học Đường',
-                  email: 'Khách Cloud (' + (c.id ? c.id.substring(0, 7) : 'id') + ')',
-                  className: 'Khách / KTX',
-                  lastActive: c.updatedAt || c.clientUpdatedAt,
-                  breathing: 0,
-                  timer: 0,
-                  msgCount: c.messageCount || (c.messages ? c.messages.length : 0),
-                  type: 'cloud_session'
-                });
-              }
-            });
-          } catch(e) {}
-        }
-      } catch (err) {
-        console.warn('Lưu ý đồng bộ Firestore (hệ thống sẽ tự động tổng hợp từ LocalStorage):', err.message);
-        cloudConnected = false;
-      }
-
-      // 3. Hợp nhất phiên trò chuyện từ LocalStorage (Dữ liệu học sinh trò chuyện trực tiếp)
+      // 1. Chuyển đổi các phiên chat local thành danh sách học sinh
       localSessions.forEach((ls, idx) => {
-        const exists = studentsData.some(st => st.id === ls.id);
-        if (!exists) {
-          const dateStr = ls.updatedAt 
-            ? new Date(ls.updatedAt).toLocaleDateString('vi-VN', {hour:'2-digit', minute:'2-digit'}) 
-            : 'Hôm nay';
-          const title = ls.title ? ls.title.trim() : 'Trải nghiệm Hỗ trợ Tâm lý';
-          studentsData.unshift({
-            id: ls.id || ('local_' + idx),
-            displayName: title.length > 32 ? title.substring(0, 32) + '...' : title,
-            email: 'Phiên máy thực tế (Local)',
-            className: 'PTDTNT Lào Cai',
-            lastActive: dateStr,
-            breathing: localBreath,
-            timer: localTimer,
-            msgCount: ls.messages ? ls.messages.length : 0,
-            type: 'local_session'
-          });
-        }
+        const dateStr = ls.updatedAt 
+          ? new Date(ls.updatedAt).toLocaleDateString('vi-VN', {hour:'2-digit', minute:'2-digit'}) 
+          : 'Hôm nay';
+        const title = ls.title ? ls.title.trim() : 'Trải nghiệm Hỗ trợ Tâm lý';
+        studentsData.push({
+          id: ls.id || ('local_' + idx),
+          displayName: title.length > 32 ? title.substring(0, 32) + '...' : title,
+          email: 'Phiên máy thực tế (Local)',
+          className: 'PTDTNT Lào Cai',
+          lastActive: dateStr,
+          breathing: localBreath,
+          timer: localTimer,
+          msgCount: ls.messages ? ls.messages.length : 0,
+          type: 'local_session'
+        });
       });
 
-      // 4. Hợp nhất Nhật ký từ LocalStorage
+      // 2. Chuyển đổi các bài nhật ký local
       localJournals.forEach(lj => {
-        const exists = journalsData.some(j => j.id === lj.id);
-        if (!exists) {
-          journalsData.unshift({
-            studentName: 'Học sinh CHẠM (Thực tế)',
-            clientDate: lj.clientDate || 'Vừa xong',
-            event: lj.event,
-            selfKindness: lj.selfKindness,
-            commonHumanity: lj.commonHumanity,
-            source: 'local'
-          });
-        }
+        journalsData.push({
+          studentName: 'Học sinh CHẠM (Thực tế)',
+          clientDate: lj.clientDate || 'Vừa xong',
+          event: lj.event,
+          selfKindness: lj.selfKindness,
+          commonHumanity: lj.commonHumanity,
+          source: 'local'
+        });
       });
 
-      // 5. Nếu chưa có phiên thực tế nào (trình duyệt mới tinh), nạp bộ mẫu can thiệp đề tài để minh họa
+      // 3. Nếu chưa có phiên thực tế nào, nạp mẫu can thiệp đề tài minh họa
       if (studentsData.length === 0) {
         studentsData = [
           { displayName: 'Vàng Thị Hoa', email: 'hoa.ptdtnt@gmail.com', className: 'Lớp 11A1', lastActive: 'Hôm nay', breathing: 5, timer: 8, isMock: true },
@@ -665,39 +628,94 @@
         ];
       }
 
-      // 6. Tính toán KPIs tổng hợp
-      const finalBreathCount = Math.max(totalBreath + localBreath, studentsData.reduce((acc, s) => acc + (s.breathing || 0), 0), 12);
-      const finalTimerCount = Math.max(totalTimer + localTimer, studentsData.reduce((acc, s) => acc + (s.timer || 0), 0), 18);
-      const finalTotalStudents = studentsData.length;
-      const finalJournalCount = journalsData.length;
-
-      document.getElementById('kpiTotalStudents').textContent = finalTotalStudents;
+      // 4. Tính toán và gán ngay lập tức vào 4 ô KPI
+      const finalBreathCount = Math.max(localBreath, studentsData.reduce((acc, s) => acc + (s.breathing || 0), 0), 12);
+      const finalTimerCount = Math.max(localTimer, studentsData.reduce((acc, s) => acc + (s.timer || 0), 0), 18);
+      document.getElementById('kpiTotalStudents').textContent = studentsData.length;
       document.getElementById('kpiBreathingCount').textContent = finalBreathCount;
       document.getElementById('kpiTimerCount').textContent = finalTimerCount;
-      document.getElementById('kpiJournalCount').textContent = finalJournalCount;
+      document.getElementById('kpiJournalCount').textContent = journalsData.length;
 
-      // Cập nhật trạng thái badge Firestore
-      const badge = document.getElementById('firestoreStatusBadge');
-      if (badge) {
-        if (cloudConnected) {
-          badge.innerHTML = '<i class="fa-solid fa-cloud-arrow-up" style="color:#10B981;"></i> Đã kết nối Cloud Firestore';
-          badge.style.color = '#047857';
-          badge.style.borderColor = '#A7F3D0';
-          badge.style.background = '#ECFDF5';
-        } else {
-          badge.innerHTML = '<i class="fa-solid fa-hard-drive" style="color:#D97706;"></i> Lưu trữ Trực tiếp Cục bộ (0ms & LocalStorage)';
-          badge.style.color = '#B45309';
-          badge.style.borderColor = '#FDE68A';
-          badge.style.background = '#FFFBEB';
-        }
-      }
-
-      // 7. Hiển thị bảng học sinh & nhật ký
+      // 5. Hiển thị bảng & biểu đồ
       renderStudentsTable();
       renderJournalsList();
-
-      // 8. Cập nhật các biểu đồ số liệu thực tế
       updateDynamicCharts(localFanClicks, localSessions);
+    }
+
+    async function loadFirebaseAdminData() {
+      // BƯỚC 1: Hiển thị ngay 0ms dữ liệu cục bộ
+      renderImmediateLocalData();
+
+      // BƯỚC 2: Thử kết nối Cloud Firestore ngầm với timeout 2.5s
+      if (!db) {
+        updateCloudStatusBadge(false);
+        return;
+      }
+
+      try {
+        const usersSnap = await withTimeout(db.collection('users').get(), 2500);
+        let cloudBreath = 0;
+        let cloudTimer = 0;
+        const cloudStudents = [];
+
+        usersSnap.forEach(doc => {
+          const u = doc.data();
+          const b = (u.stats && u.stats.breathing) || 0;
+          const t = (u.stats && u.stats.timer) || 0;
+          cloudBreath += b;
+          cloudTimer += t;
+          cloudStudents.push({
+            id: doc.id,
+            displayName: u.displayName || 'Học sinh CHẠM',
+            email: u.email || 'Học sinh Đăng ký',
+            className: u.className || 'PTDTNT THPT Lào Cai',
+            lastActive: u.lastActive || u.lastLoginAt,
+            breathing: b,
+            timer: t,
+            type: 'registered'
+          });
+        });
+
+        if (cloudStudents.length > 0) {
+          // Bỏ dữ liệu mẫu nếu có tài khoản thật trên cloud
+          studentsData = studentsData.filter(s => !s.isMock);
+          cloudStudents.forEach(cs => {
+            if (!studentsData.some(s => s.id === cs.id)) {
+              studentsData.unshift(cs);
+            }
+          });
+        }
+
+        // Lấy bài nhật ký từ cloud
+        for (const s of cloudStudents) {
+          try {
+            const jSnap = await withTimeout(db.collection('users').doc(s.id).collection('journals').limit(5).get(), 1500);
+            jSnap.forEach(jd => {
+              const jdata = jd.data();
+              if (!journalsData.some(j => j.id === jd.id)) {
+                journalsData.unshift({ studentName: s.displayName, ...jdata, source: 'cloud' });
+              }
+            });
+          } catch(e) {}
+        }
+
+        // Cập nhật lại KPI sau khi gộp cloud
+        const localBreath = parseInt(localStorage.getItem('CHAM_STAT_breathing') || '0', 10);
+        const localTimer = parseInt(localStorage.getItem('CHAM_STAT_timer') || '0', 10);
+        const totalB = Math.max(cloudBreath + localBreath, studentsData.reduce((acc, s) => acc + (s.breathing || 0), 0), 12);
+        const totalT = Math.max(cloudTimer + localTimer, studentsData.reduce((acc, s) => acc + (s.timer || 0), 0), 18);
+        document.getElementById('kpiTotalStudents').textContent = studentsData.length;
+        document.getElementById('kpiBreathingCount').textContent = totalB;
+        document.getElementById('kpiTimerCount').textContent = totalT;
+        document.getElementById('kpiJournalCount').textContent = journalsData.length;
+
+        renderStudentsTable();
+        renderJournalsList();
+        updateCloudStatusBadge(true);
+      } catch (err) {
+        console.warn('Lưu ý đồng bộ Firestore (Đã hiển thị dữ liệu cục bộ an toàn):', err.message);
+        updateCloudStatusBadge(false);
+      }
     }
 
     function renderStudentsTable() {
