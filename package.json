@@ -1,0 +1,8 @@
+{
+  "name": "chatbot-cham-ui",
+  "version": "1.0.0",
+  "description": "Chatbot CHAM - He sinh thai Ho tro Tam ly & Tu dieu chinh Hoc tap PTDTNT THPT Lao Cai",
+  "scripts": {
+    "start": "python -m http.server 5500"
+  }
+}
