@@ -100,8 +100,8 @@ document.addEventListener('DOMContentLoaded', () => {
       dynamicSystemPrompt += '\n\n[CHỈ ĐỊNH ĐẶC BIỆT]: Học sinh đang yêu cầu Chế độ 2 (Bứt phá). Hãy tập trung sâu vào chiến lược nhận thức thực chứng, tư duy phát triển và các bước tự điều chỉnh học tập cụ thể.';
     }
 
-    // YÊU CẦU BẮT BUỘC VỀ ĐỘ DÀI
-    dynamicSystemPrompt += '\n\n[YÊU CẦU ĐẶC BIỆT - BẮT BUỘC]: Hãy trả lời THẬT NGẮN GỌN, SÚC TÍCH (chỉ từ 2 đến 3 đoạn văn ngắn, dưới 100 từ). Tuyệt đối không viết dài dòng, không giảng đạo lê thê. Đi thẳng vào giải pháp và kết thúc bằng 1 lời mời hành động nhỏ!';
+    // HƯỚNG DẪN TRÌNH BÀY VÀ CẤU TRÚC PHẢN HỒI CHUYÊN SÂU
+    dynamicSystemPrompt += '\n\n[HƯỚNG DẪN TRÌNH BÀY]: Hãy trả lời ân cần, sâu sắc, có cấu trúc rõ ràng với 3 phần (độ dài phù hợp khoảng 150 - 250 từ, tuyệt đối không trả lời cộc lốc chỉ 1 câu):\n1. Thấu cảm chân thành & Bình thường hóa cảm xúc (M1, M2 - thấu hiểu áp lực thi cử, KTX, học tập).\n2. Khai phóng nhận thức & Góc nhìn khoa học tâm lý (Tự trắc ẩn Kristin Neff, Tư duy phát triển Carol Dweck, Tính đồng loại Common Humanity).\n3. Kế hoạch hành động vi mô 3 bước rõ ràng (X, Y) kèm Nan thẻ quạt / công cụ thực hành cụ thể.';
 
     const payload = {
       system_instruction: {
@@ -109,9 +109,9 @@ document.addEventListener('DOMContentLoaded', () => {
       },
       contents: conversationHistory,
       generationConfig: {
-        temperature: 0.6,
+        temperature: 0.7,
         topP: 0.95,
-        maxOutputTokens: 350
+        maxOutputTokens: 1200
       }
     };
 
