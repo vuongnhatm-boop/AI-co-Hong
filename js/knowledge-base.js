@@ -719,32 +719,60 @@ Chúc bạn có một buổi tự học thật hiệu quả, tâm an trí vững
     };
   }
 
-  // 29. PHẢN HỒI LUÂN PHIÊN THÔNG MINH NẾU KHÔNG KHỚP TỪ KHÓA
+  // 29. YÊU CẦU LỜI KHUYÊN / ĐỊNH HƯỚNG TỔNG QUÁT
+  if (lower.includes('khuyên') || lower.includes('lời khuyên') || lower.includes('tư vấn') || lower.includes('làm gì') || lower.includes('giúp tôi') || lower.includes('bế tắc') || lower.includes('gỡ rối')) {
+    return {
+      mode: 'sage',
+      tag: 'Tư Vấn & Định Hướng Đồng Hành',
+      response: `**CHẠM luôn ở ngay đây để làm điểm tựa và đồng hành gỡ rối cùng bạn.** Khi tâm trí đang ngổn ngang hoặc chưa biết bắt đầu từ đâu, việc bạn chủ động mở lời tìm kiếm sự hỗ trợ đã là một bước tiến rất dũng cảm của **Tự trắc ẩn (Self-compassion)**.
+
+🌿 **Góc xoa dịu & Khai phóng nhận thức:**
+* Bạn không cần phải giải quyết mọi vấn đề cùng một lúc. Mọi sự hoang mang đều bắt nguồn từ việc não bộ phải xử lý quá nhiều thông tin và kỳ vọng.
+* Hãy cho phép bản thân chậm lại một nhịp, hít thở thật sâu. Chúng mình sẽ chia nhỏ mọi khó khăn thành từng việc vi mô có thể kiểm soát được.
+
+🚀 **3 Bước hành động ngay lúc này:**
+1. **Bước 1 (Hạ nhiệt tâm trí):** Nếu đầu óc đang căng như dây đàn, hãy bấm nút **[Mở bài tập Thở 4-7-8]** bên dưới để đưa nhịp tim và hệ thần kinh về trạng thái an tĩnh.
+2. **Bước 2 (Gọi tên nút thắt):** Bạn đang cảm thấy nặng lòng nhất vì điều gì? Điểm số thi thử, bài tập quá tải, sự so sánh của gia đình, hay cảm giác mệt mỏi ở KTX?
+3. **Bước 3 (Chọn công cụ):** Mở thanh bên trái và chọn **14 Nan Thẻ Quạt "Chạm để Bứt phá"** (Nan 01 - Nan 07 để xoa dịu, Nan 08 - Nan 14 để bứt phá tự học) để nhận ngay chiến lược cụ thể nhé!`
+    };
+  }
+
+  // 30. PHẢN HỒI LUÂN PHIÊN THÔNG MINH NẾU KHÔNG KHỚP TỪ KHÓA
   const defaultResponses = [
     {
       mode: currentOperatingMode === 'orange' ? 'orange' : 'sage',
       tag: currentOperatingMode === 'orange' ? 'Chiến Lược Tự Điều Chỉnh' : 'Xoa Dịu & Lắng Nghe',
       response: `**Mình đang lắng nghe bạn đây.** Những áp lực và tâm sự trong học tập đôi khi rất khó để giãi bày cùng ai.
 
-Bạn có thể chia sẻ cụ thể hơn cho mình nghe được không? Ví dụ như:
-* Bạn đang gặp khó khăn ở môn học nào (Toán, Văn, Anh, Lý, Hóa...)?
-* Hay đang có điều gì về bạn bè, gia đình, giấc ngủ khiến bạn phiền lòng?
+🌿 **Điểm tựa an tâm:** Bất kể bạn đang gặp khó khăn gì, hãy nhớ rằng bạn hoàn toàn không đơn độc trên hành trình này. CHẠM luôn ở đây đồng hành cùng bạn 24/7 tuyệt đối không phán xét.
 
-Mình sẽ cùng bạn tháo gỡ từng nút thắt một cách nhẹ nhàng nhất nhé!`
+🚀 **Bạn có thể chia sẻ cụ thể hơn cho mình nghe được không?**
+* Bạn đang cảm thấy căng thẳng ở môn học nào (Toán, Văn, Anh, Lý, Hóa...)?
+* Hay đang có điều gì về bạn bè, KTX, gia đình hoặc sức khỏe khiến bạn phiền lòng?
+Mình sẽ cùng bạn phân tích và gỡ rối từng nút thắt một cách khoa học nhất nhé!`
     },
     {
       mode: 'orange',
-      tag: 'Phá Bỏ Trì Hoãn',
-      response: `**Mỗi thử thách trong học tập chính là cơ hội để các liên kết nơ-ron não bộ của bạn rèn luyện sự dẻo dai.**
+      tag: 'Kích Hoạt Năng Lượng SRL',
+      response: `**Mỗi khó khăn trong học tập chính là cơ hội quý giá để não bộ rèn luyện Tư duy phát triển (Growth Mindset - GS. Carol Dweck).**
 
-Nếu bạn đang cảm thấy bế tắc hoặc chưa biết bắt đầu từ đâu, hãy thử mở **14 Nan Thẻ Quạt** ở thanh bên trái hoặc bấm nút **[Bật hẹn giờ 5 phút]** bên dưới để khởi động cùng mình nhé!`
+🌿 **Khoa học nhận thức:** Khi bạn cảm thấy bế tắc, đó là tín hiệu tự nhiên cho thấy não bộ đang hình thành các liên kết nơ-ron mới. Đừng nản lòng, chỉ cần đổi cách tiếp cận là mọi thứ sẽ thông suốt!
+
+🚀 **Gợi ý khởi động tức thì:**
+1. Mở **14 Nan Thẻ Quạt** ở thanh bên trái để chọn ngay một công cụ bỏ túi.
+2. Bấm nút **[Bật hẹn giờ 5 phút]** bên dưới để kích hoạt quy tắc 5 phút phá tan sức ỳ trì hoãn.
+3. Hoặc chia sẻ cho mình bài tập cụ thể bạn đang vướng mắc để chúng mình cùng xử lý nhé!`
     },
     {
       mode: 'sage',
       tag: 'Điểm Tựa An Yên',
-      response: `**Mình hiểu và luôn ở đây đồng hành cùng bạn.** Bạn không cần phải gánh vác mọi áp lực một mình đâu.
+      response: `**Mình hiểu và luôn ở đây đồng hành cùng bạn.** Bạn đã nỗ lực rất nhiều suốt thời gian qua rồi, không cần phải tự gánh vác mọi áp lực một mình đâu.
 
-Bây giờ, bạn muốn chúng mình cùng **Thở 4-7-8** cho nhẹ nhõm đầu óc trước, hay cùng **Mở Sổ Nhật Ký Tự Trắc Ẩn** để viết ra những suy nghĩ ngổn ngang hôm nay?`
+🌿 **Chăm sóc bản thân:** Lắng nghe cảm xúc của chính mình là bước đầu tiên để tái tạo năng lượng (Thuyết Tự trắc ẩn Kristin Neff).
+
+🚀 **Bây giờ bạn muốn chúng mình cùng làm gì trước?**
+* Bấm **[Mở bài tập Thở 4-7-8]** để xoa dịu nhịp tim và thư giãn đầu óc trong 2 phút.
+* Hay cùng **Mở Sổ Nhật Ký Tự Trắc Ẩn** để viết ra những suy nghĩ ngổn ngang hôm nay?`
     }
   ];
 
