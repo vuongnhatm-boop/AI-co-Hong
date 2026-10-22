@@ -50,13 +50,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const _k = 'QVEuQWI4Uk42SlhWLW9RQVZqZmh4eUtLSjdHT21PMkFaOFJwaUZoalphaXRvME9Tb2FLSWc=';
   const DEFAULT_API_KEY = typeof atob === 'function' ? atob(_k) : '';
   let storedKey = localStorage.getItem('CHAM_GEMINI_API_KEY');
-  // Tự động kích hoạt DEFAULT_API_KEY nếu chưa có key hoặc key cũ bị lỗi
-  if (!storedKey || storedKey.includes('AQ.Ab8RN6L8Z51P')) {
+  // Nếu key rỗng hoặc không phải key của hệ thống, tự động đặt lại key mặc định
+  if (!storedKey || (!storedKey.startsWith('AIzaSy') && storedKey !== DEFAULT_API_KEY)) {
     storedKey = DEFAULT_API_KEY;
     localStorage.setItem('CHAM_GEMINI_API_KEY', DEFAULT_API_KEY);
   }
   let activeApiKey = storedKey;
   if (apiKeyInput) apiKeyInput.value = activeApiKey;
+
+  // Cập nhật huy hiệu AI ban đầu ngay khi tải trang
+  updateAiBadge(true, 'Gemini 2.5 Active');
 
   // Official Google Gemini models order (Gemini 2.5 thế hệ mới)
   const GEMINI_MODELS = [
@@ -125,7 +128,10 @@ document.addEventListener('DOMContentLoaded', () => {
       generationConfig: {
         temperature: 0.7,
         topP: 0.95,
-        maxOutputTokens: 1500
+        maxOutputTokens: 2500,
+        thinkingConfig: {
+          thinkingBudget: 0
+        }
       }
     };
 
