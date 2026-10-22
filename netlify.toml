@@ -2,20 +2,23 @@
 [build]
   publish = "."
 
-# Cấu hình Header tối ưu bảo mật và tài nguyên
+# Cấu hình Header tối ưu bảo mật và chống lưu cache
 [[headers]]
   for = "/*"
   [headers.values]
     X-Content-Type-Options = "nosniff"
+    Cache-Control = "no-cache, no-store, must-revalidate"
+    Pragma = "no-cache"
+    Expires = "0"
 
 [[headers]]
   for = "/css/*"
   [headers.values]
     Content-Type = "text/css; charset=UTF-8"
-    Cache-Control = "public, max-age=0, must-revalidate"
+    Cache-Control = "no-cache, no-store, must-revalidate"
 
 [[headers]]
   for = "/js/*"
   [headers.values]
     Content-Type = "application/javascript; charset=UTF-8"
-    Cache-Control = "public, max-age=0, must-revalidate"
+    Cache-Control = "no-cache, no-store, must-revalidate"
