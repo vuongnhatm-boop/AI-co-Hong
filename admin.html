@@ -672,64 +672,106 @@
       // BƯỚC 1: Hiển thị ngay 0ms dữ liệu cục bộ
       renderImmediateLocalData();
 
-      // BƯỚC 2: Thử kết nối Cloud Firestore ngầm với timeout 2.5s
+      // BƯỚC 2: Thử kết nối Cloud Firestore ngầm với timeout 3.5s
       if (!db) {
         updateCloudStatusBadge(false);
         return;
       }
 
       try {
-        const usersSnap = await withTimeout(db.collection('users').get(), 2500);
+        const usersSnap = await withTimeout(db.collection('users').get(), 3500);
         let cloudBreath = 0;
         let cloudTimer = 0;
         const cloudStudents = [];
+        const cloudFanClicks = {};
+        let scDiemKem = 0, scQuatai = 0, scTrihoan = 0, scBaikho = 0;
 
         usersSnap.forEach(doc => {
           const u = doc.data();
-          const b = (u.stats && u.stats.breathing) || 0;
-          const t = (u.stats && u.stats.timer) || 0;
+          const stats = u.stats || {};
+          const sc = u.scenarios || {};
+          const b = Number(stats.breathing) || 0;
+          const t = Number(stats.timer) || 0;
           cloudBreath += b;
           cloudTimer += t;
+
+          // Tổng hợp lượt click thẻ quạt
+          for (let i = 1; i <= 14; i++) {
+            const fc = Number(stats['fan_' + i]) || 0;
+            cloudFanClicks[i] = (cloudFanClicks[i] || 0) + fc;
+          }
+
+          // Tổng hợp tình huống từ tài khoản học sinh
+          scDiemKem += Number(sc.diemkem) || 0;
+          scQuatai += Number(sc.quatai) || 0;
+          scTrihoan += Number(sc.trihoan) || 0;
+          scBaikho += Number(sc.baikho) || 0;
+
           cloudStudents.push({
             id: doc.id,
-            displayName: u.displayName || 'Học sinh CHẠM',
-            email: u.email || 'Học sinh Đăng ký',
+            displayName: u.displayName || (u.email ? u.email.split('@')[0] : 'Học sinh CHẠM'),
+            email: u.email || 'Tài khoản Đăng nhập',
             className: u.className || 'PTDTNT THPT Lào Cai',
             lastActive: u.lastActive || u.lastLoginAt,
             breathing: b,
             timer: t,
+            stats: stats,
             type: 'registered'
           });
         });
 
-        if (cloudStudents.length > 0) {
-          // Bỏ dữ liệu mẫu nếu có tài khoản thật trên cloud
-          studentsData = studentsData.filter(s => !s.isMock);
-          cloudStudents.forEach(cs => {
-            if (!studentsData.some(s => s.id === cs.id)) {
-              studentsData.unshift(cs);
+        // Đọc thêm thống kê chung trường học (school_stats/laocai) nếu có
+        try {
+          const schoolDoc = await withTimeout(db.collection('school_stats').doc('laocai').get(), 2000);
+          if (schoolDoc.exists) {
+            const sData = schoolDoc.data();
+            const sStats = sData.stats || {};
+            const sSc = sData.scenarios || {};
+            cloudBreath = Math.max(cloudBreath, Number(sStats.breathing) || 0);
+            cloudTimer = Math.max(cloudTimer, Number(sStats.timer) || 0);
+            for (let i = 1; i <= 14; i++) {
+              cloudFanClicks[i] = Math.max(cloudFanClicks[i] || 0, Number(sStats['fan_' + i]) || 0);
             }
-          });
+            scDiemKem = Math.max(scDiemKem, Number(sSc.diemkem) || 0);
+            scQuatai = Math.max(scQuatai, Number(sSc.quatai) || 0);
+            scTrihoan = Math.max(scTrihoan, Number(sSc.trihoan) || 0);
+            scBaikho = Math.max(scBaikho, Number(sSc.baikho) || 0);
+          }
+        } catch(e) {}
+
+        if (cloudStudents.length > 0) {
+          studentsData = cloudStudents;
         }
 
-        // Lấy bài nhật ký từ cloud
-        for (const s of cloudStudents) {
-          try {
-            const jSnap = await withTimeout(db.collection('users').doc(s.id).collection('journals').limit(5).get(), 1500);
-            jSnap.forEach(jd => {
-              const jdata = jd.data();
-              if (!journalsData.some(j => j.id === jd.id)) {
-                journalsData.unshift({ studentName: s.displayName, ...jdata, source: 'cloud' });
-              }
+        // Đọc bài viết nhật ký từ collection tập trung all_journals
+        try {
+          const allJournalsSnap = await withTimeout(db.collection('all_journals').orderBy('createdAt', 'desc').limit(50).get(), 2500);
+          if (!allJournalsSnap.empty) {
+            journalsData = [];
+            allJournalsSnap.forEach(jd => {
+              journalsData.push({ id: jd.id, ...jd.data(), source: 'cloud' });
             });
-          } catch(e) {}
+          }
+        } catch(e) {
+          // Fallback: nếu all_journals chưa có, quét các subcollections
+          for (const s of cloudStudents.slice(0, 15)) {
+            try {
+              const jSnap = await withTimeout(db.collection('users').doc(s.id).collection('journals').limit(5).get(), 1000);
+              jSnap.forEach(jd => {
+                const jdata = jd.data();
+                if (!journalsData.some(j => j.id === jd.id)) {
+                  journalsData.unshift({ studentName: s.displayName, ...jdata, source: 'cloud' });
+                }
+              });
+            } catch(err) {}
+          }
         }
 
         // Cập nhật lại KPI sau khi gộp cloud
         const localBreath = parseInt(localStorage.getItem('CHAM_STAT_breathing') || '0', 10);
         const localTimer = parseInt(localStorage.getItem('CHAM_STAT_timer') || '0', 10);
-        const totalB = cloudBreath + localBreath;
-        const totalT = cloudTimer + localTimer;
+        const totalB = Math.max(cloudBreath, localBreath);
+        const totalT = Math.max(cloudTimer, localTimer);
         document.getElementById('kpiTotalStudents').textContent = studentsData.length;
         document.getElementById('kpiBreathingCount').textContent = totalB;
         document.getElementById('kpiTimerCount').textContent = totalT;
@@ -737,6 +779,16 @@
 
         renderStudentsTable();
         renderJournalsList();
+
+        // Gộp lượt xem thẻ quạt giữa local và cloud
+        let localFanClicks = {};
+        try { localFanClicks = JSON.parse(localStorage.getItem('CHAM_FAN_CLICKS') || '{}'); } catch(e){}
+        const mergedFanClicks = {};
+        for (let i = 1; i <= 14; i++) {
+          mergedFanClicks[i] = Math.max(Number(localFanClicks[i]) || 0, Number(cloudFanClicks[i]) || 0);
+        }
+
+        updateDynamicCharts(mergedFanClicks, null, { diemkem: scDiemKem, quatai: scQuatai, trihoan: scTrihoan, baikho: scBaikho });
         updateCloudStatusBadge(true);
       } catch (err) {
         console.warn('Lưu ý đồng bộ Firestore (Đã hiển thị dữ liệu cục bộ an toàn):', err.message);
@@ -808,12 +860,12 @@
       }).join('');
     }
 
-    function updateDynamicCharts(localFanClicks, localSessions) {
+    function updateDynamicCharts(fanClicksMap, localSessions, cloudScenarios = null) {
       // 1. Cập nhật Biểu đồ 14 Nan Thẻ Quạt (100% lượt bấm thực tế)
       if (fanChartInstance) {
         const updatedData = Array.from({ length: 14 }, (_, idx) => {
           const cardNum = idx + 1;
-          return Number(localFanClicks[cardNum]) || 0;
+          return Number(fanClicksMap ? fanClicksMap[cardNum] : 0) || 0;
         });
         fanChartInstance.data.datasets[0].data = updatedData;
         fanChartInstance.update();
@@ -821,7 +873,11 @@
 
       // 2. Cập nhật Biểu đồ Tỷ lệ Tình Huống Can Thiệp (100% từ tin nhắn thực tế)
       if (scenariosChartInstance) {
-        let s1 = 0, s2 = 0, s3 = 0, s4 = 0;
+        let s1 = cloudScenarios ? (cloudScenarios.diemkem || 0) : 0;
+        let s2 = cloudScenarios ? (cloudScenarios.quatai || 0) : 0;
+        let s3 = cloudScenarios ? (cloudScenarios.trihoan || 0) : 0;
+        let s4 = cloudScenarios ? (cloudScenarios.baikho || 0) : 0;
+
         (localSessions || []).forEach(sess => {
           (sess.messages || []).forEach(m => {
             const text = ((m.content || '') + ' ' + (m.rawContent || '')).toLowerCase();

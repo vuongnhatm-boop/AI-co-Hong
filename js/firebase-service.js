@@ -128,8 +128,60 @@
       }
 
       await userRef.set(profileData, { merge: true });
+
+      // Tự động gộp dữ liệu tương tác từ trước (khi dùng ẩn danh) vào tài khoản Cloud
+      await mergeLocalDataIntoUserAccount(user, userRef);
     } catch (err) {
       console.warn('Lỗi đồng bộ profile lên Firestore:', err.message);
+    }
+  }
+
+  // Tự động gộp dữ liệu khách (LocalStorage) vào tài khoản Firestore khi đăng nhập
+  async function mergeLocalDataIntoUserAccount(user, userRef) {
+    if (!db || !user || !userRef) return;
+    try {
+      const syncKey = 'CHAM_MERGED_UID_' + user.uid;
+      const hasMerged = localStorage.getItem(syncKey);
+      if (hasMerged) return;
+
+      const localBreath = parseInt(localStorage.getItem('CHAM_STAT_breathing') || '0', 10);
+      const localTimer = parseInt(localStorage.getItem('CHAM_STAT_timer') || '0', 10);
+      let localFanClicks = {};
+      try { localFanClicks = JSON.parse(localStorage.getItem('CHAM_FAN_CLICKS') || '{}'); } catch(e){}
+
+      const statUpdates = {};
+      if (localBreath > 0) statUpdates['stats.breathing'] = firebase.firestore.FieldValue.increment(localBreath);
+      if (localTimer > 0) statUpdates['stats.timer'] = firebase.firestore.FieldValue.increment(localTimer);
+      for (const [k, v] of Object.entries(localFanClicks)) {
+        const count = parseInt(v, 10);
+        if (count > 0) statUpdates[`stats.fan_${k}`] = firebase.firestore.FieldValue.increment(count);
+      }
+      if (Object.keys(statUpdates).length > 0) {
+        await userRef.set(statUpdates, { merge: true }).catch(()=>{});
+        await db.collection('school_stats').doc('laocai').set(statUpdates, { merge: true }).catch(()=>{});
+      }
+
+      // Gộp bài nhật ký cục bộ lên Cloud
+      let localJournals = [];
+      try { localJournals = JSON.parse(localStorage.getItem('CHAM_JOURNAL_ENTRIES') || '[]'); } catch(e){}
+      for (const j of localJournals) {
+        if (j && j.id && !j.cloudSynced) {
+          const jDoc = {
+            ...j,
+            studentName: user.displayName || (user.email ? user.email.split('@')[0] : 'Học sinh'),
+            uid: user.uid,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          };
+          await userRef.collection('journals').doc(j.id).set(jDoc).catch(()=>{});
+          await db.collection('all_journals').doc(j.id).set(jDoc).catch(()=>{});
+          j.cloudSynced = true;
+        }
+      }
+      localStorage.setItem('CHAM_JOURNAL_ENTRIES', JSON.stringify(localJournals));
+      localStorage.setItem(syncKey, 'true');
+      console.log('✅ Đã gộp toàn bộ dữ liệu tương tác từ trước vào tài khoản đám mây thành công!');
+    } catch(err) {
+      console.warn('Lỗi gộp dữ liệu local vào tài khoản:', err.message);
     }
   }
 
@@ -241,6 +293,23 @@
         clientTime: new Date().toISOString()
       };
 
+      // Phân loại tình huống để phục vụ biểu đồ thống kê thực tế
+      const lower = (content || '').toLowerCase();
+      let scenarioKey = null;
+      if (lower.includes('điểm') || lower.includes('dằn vặt') || lower.includes('toán') || lower.includes('kém') || lower.includes('sợ thi')) {
+        scenarioKey = 'diemkem';
+      } else if (lower.includes('quá tải') || lower.includes('áp lực') || lower.includes('ktx') || lower.includes('mệt') || lower.includes('dồn')) {
+        scenarioKey = 'quatai';
+      } else if (lower.includes('trì hoãn') || lower.includes('điện thoại') || lower.includes('lười') || lower.includes('game') || lower.includes('lướt')) {
+        scenarioKey = 'trihoan';
+      } else if (lower.includes('bài khó') || lower.includes('bế tắc') || lower.includes('không hiểu') || lower.includes('hỏi') || lower.includes('feynman')) {
+        scenarioKey = 'baikho';
+      }
+
+      if (scenarioKey) {
+        messageDoc.scenario = scenarioKey;
+      }
+
       if (currentUser) {
         // Lưu vào tài khoản cá nhân: users/{uid}/messages
         await db.collection('users')
@@ -248,16 +317,26 @@
           .collection('messages')
           .add(messageDoc);
 
-        // Cập nhật lastActive cho tài khoản
-        await db.collection('users').doc(currentUser.uid).set({
+        const uUpdate = {
           lastActive: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
+        };
+        if (scenarioKey) {
+          uUpdate[`scenarios.${scenarioKey}`] = firebase.firestore.FieldValue.increment(1);
+        }
+        await db.collection('users').doc(currentUser.uid).set(uUpdate, { merge: true });
       } else {
         // Lưu theo phiên khách
         await db.collection('conversations')
           .doc(sessionId)
           .collection('messages')
           .add(messageDoc);
+      }
+
+      if (scenarioKey) {
+        await db.collection('school_stats').doc('laocai').set({
+          [`scenarios.${scenarioKey}`]: firebase.firestore.FieldValue.increment(1),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true }).catch(()=>{});
       }
     } catch (err) {
       console.warn('Lưu tin nhắn Firestore:', err.message);
@@ -317,12 +396,23 @@
           ...entry,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         };
+        const studentName = currentUser 
+          ? (currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'Học sinh'))
+          : 'Học sinh Khách (KTX)';
+        firestoreEntry.studentName = studentName;
+        firestoreEntry.uid = currentUser ? currentUser.uid : sessionId;
+
         if (currentUser) {
           await db.collection('users')
             .doc(currentUser.uid)
             .collection('journals')
             .doc(entryId)
             .set(firestoreEntry);
+
+          await db.collection('users').doc(currentUser.uid).set({
+            journalCount: firebase.firestore.FieldValue.increment(1),
+            lastActive: firebase.firestore.FieldValue.serverTimestamp()
+          }, { merge: true });
         } else {
           await db.collection('conversations')
             .doc(sessionId)
@@ -330,6 +420,15 @@
             .doc(entryId)
             .set(firestoreEntry);
         }
+
+        // Lưu bản ghi tập trung để Admin xem được toàn bộ nhật ký học sinh
+        await db.collection('all_journals').doc(entryId).set(firestoreEntry).catch(()=>{});
+
+        // Cập nhật thống kê trường học
+        await db.collection('school_stats').doc('laocai').set({
+          total_journals: firebase.firestore.FieldValue.increment(1),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true }).catch(()=>{});
       } catch (err) {
         console.warn('Lỗi đồng bộ Firestore nhật ký:', err.message);
       }
@@ -378,17 +477,36 @@
   // Cập nhật thống kê rèn luyện cá nhân
   async function recordUserStat(statKey) {
     logEvent('stat_' + statKey);
-    // Lưu cục bộ
+    // 1. Lưu cục bộ trước (0ms)
     const localKey = 'CHAM_STAT_' + statKey;
     const currentVal = parseInt(localStorage.getItem(localKey) || '0', 10) + 1;
     localStorage.setItem(localKey, currentVal.toString());
 
-    // Nếu đã đăng nhập, đồng bộ lên Firestore
-    if (db && currentUser) {
+    // Nếu là click thẻ quạt, đồng bộ thêm vào CHAM_FAN_CLICKS
+    if (statKey.startsWith('fan_')) {
+      const cardNum = statKey.replace('fan_', '');
       try {
-        await db.collection('users').doc(currentUser.uid).set({
+        const fanClicks = JSON.parse(localStorage.getItem('CHAM_FAN_CLICKS') || '{}');
+        fanClicks[cardNum] = (fanClicks[cardNum] || 0) + 1;
+        localStorage.setItem('CHAM_FAN_CLICKS', JSON.stringify(fanClicks));
+      } catch(e) {}
+    }
+
+    // 2. Đồng bộ lên Cloud Firestore
+    if (db) {
+      try {
+        const statUpdates = {
           [`stats.${statKey}`]: firebase.firestore.FieldValue.increment(1)
-        }, { merge: true });
+        };
+        if (currentUser) {
+          statUpdates.lastActive = firebase.firestore.FieldValue.serverTimestamp();
+          await db.collection('users').doc(currentUser.uid).set(statUpdates, { merge: true });
+        }
+        // Luôn cập nhật bộ đếm tổng thể trường học
+        await db.collection('school_stats').doc('laocai').set({
+          [`stats.${statKey}`]: firebase.firestore.FieldValue.increment(1),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true }).catch(()=>{});
       } catch (err) {
         console.warn('Lỗi đồng bộ stat lên cloud:', err.message);
       }
