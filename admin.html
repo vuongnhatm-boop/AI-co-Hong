@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link rel="stylesheet" href="css/style.css?v=6">
+  <link rel="stylesheet" href="css/style.css?v=20261026_v6">
   <link rel="icon" type="image/jpeg" href="assets/avatar.jpg?v=6">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
@@ -370,32 +370,70 @@
       <div class="kpi-card">
         <div class="kpi-icon blue"><i class="fa-solid fa-user-graduate"></i></div>
         <div class="kpi-info">
-          <strong id="kpiTotalStudents">3</strong>
+          <strong id="kpiTotalStudents">0</strong>
           <span>Học sinh tham gia</span>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon" style="background:#FEF3C7; color:#D97706;"><i class="fa-solid fa-magnifying-glass"></i></div>
+        <div class="kpi-info">
+          <strong id="kpiActivityCount">0</strong>
+          <span>Lượt tra cứu & Thao tác</span>
         </div>
       </div>
       <div class="kpi-card">
         <div class="kpi-icon sage"><i class="fa-solid fa-wind"></i></div>
         <div class="kpi-info">
-          <strong id="kpiBreathingCount">15</strong>
+          <strong id="kpiBreathingCount">0</strong>
           <span>Lượt thở 4-7-8 (Hạ nhiệt)</span>
         </div>
       </div>
       <div class="kpi-card">
         <div class="kpi-icon orange"><i class="fa-solid fa-stopwatch"></i></div>
         <div class="kpi-info">
-          <strong id="kpiTimerCount">26</strong>
+          <strong id="kpiTimerCount">0</strong>
           <span>Lượt học 5 phút (Tự điều chỉnh)</span>
         </div>
       </div>
       <div class="kpi-card">
         <div class="kpi-icon purple"><i class="fa-solid fa-book-bookmark"></i></div>
         <div class="kpi-info">
-          <strong id="kpiJournalCount">2</strong>
+          <strong id="kpiJournalCount">0</strong>
           <span>Bài Nhật ký Tự trắc ẩn</span>
         </div>
       </div>
     </section>
+
+    <!-- REAL-TIME STUDENT ACTIVITY & SEARCH STREAM -->
+    <div class="content-card" style="margin-bottom: 24px;">
+      <div class="card-head" style="flex-wrap: wrap; gap: 12px;">
+        <div>
+          <h2><i class="fa-solid fa-clock-rotate-left" style="color:var(--sage-700);"></i> Nhật Ký Tương Tác & Lịch Sử Tìm Kiếm Thực Tế (Live Stream)</h2>
+          <small style="color:var(--text-muted);">Tự động ghi nhận 100% lượt tra cứu, xem Nan thẻ quạt và rèn luyện của học sinh theo thời gian thực</small>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <input type="text" id="filterActivityInput" placeholder="🔍 Lọc học sinh, lớp hoặc hành vi..." style="padding: 7px 12px; font-size: 12px; border-radius: 6px; border: 1.5px solid var(--border-light); outline: none; width: 230px; font-family: inherit;">
+          <button class="btn btn-secondary" id="refreshActivityBtn" style="padding: 7px 12px; font-size: 12px; font-weight: 700;">
+            <i class="fa-solid fa-rotate"></i> Làm mới
+          </button>
+        </div>
+      </div>
+      <div style="overflow-x: auto; max-height: 420px;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 140px;">Thời gian</th>
+              <th style="width: 200px;">Học sinh / Lớp</th>
+              <th style="width: 170px;">Loại hành vi</th>
+              <th>Chi tiết nội dung can thiệp</th>
+            </tr>
+          </thead>
+          <tbody id="activityTableBody">
+            <tr><td colspan="4" style="text-align:center; padding:28px; color:var(--text-muted);">Đang kết nối cơ sở dữ liệu Firebase...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
 
     <!-- CHARTS SECTION -->
     <div class="dashboard-grid">
@@ -529,6 +567,17 @@
 
     let studentsData = [];
     let journalsData = [];
+    let activitiesData = [];
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
 
     // Helper: Giới hạn thời gian truy vấn Cloud (Tránh bị treo mạng vô hạn)
     function withTimeout(promise, ms = 2500) {
@@ -620,6 +669,12 @@
         localFanClicks = JSON.parse(localStorage.getItem('CHAM_FAN_CLICKS') || '{}');
       } catch(e) { localFanClicks = {}; }
 
+      let localActivities = [];
+      try {
+        localActivities = JSON.parse(localStorage.getItem('CHAM_ACTIVITY_LOG') || '[]');
+      } catch(e) { localActivities = []; }
+      activitiesData = localActivities.map(a => ({ ...a, source: 'local' }));
+
       studentsData = [];
       journalsData = [];
 
@@ -658,11 +713,13 @@
       const finalBreathCount = localBreath;
       const finalTimerCount = localTimer;
       document.getElementById('kpiTotalStudents').textContent = studentsData.length;
+      document.getElementById('kpiActivityCount').textContent = activitiesData.length;
       document.getElementById('kpiBreathingCount').textContent = finalBreathCount;
       document.getElementById('kpiTimerCount').textContent = finalTimerCount;
       document.getElementById('kpiJournalCount').textContent = journalsData.length;
 
       // 5. Hiển thị bảng & biểu đồ
+      renderActivitiesTable();
       renderStudentsTable();
       renderJournalsList();
       updateDynamicCharts(localFanClicks, localSessions);
@@ -767,16 +824,37 @@
           }
         }
 
+        // Đọc nhật ký hoạt động từ collection activities
+        try {
+          const actSnap = await withTimeout(db.collection('activities').orderBy('createdAt', 'desc').limit(60).get(), 2500);
+          if (!actSnap.empty) {
+            const cloudActivities = [];
+            actSnap.forEach(ad => {
+              cloudActivities.push({ id: ad.id, ...ad.data(), source: 'cloud' });
+            });
+            const mapAct = new Map();
+            cloudActivities.forEach(ca => mapAct.set(ca.id || (ca.action + '_' + ca.timestamp), ca));
+            activitiesData.forEach(la => {
+              const k = la.id || (la.action + '_' + la.timestamp);
+              if (!mapAct.has(k)) mapAct.set(k, la);
+            });
+            activitiesData = Array.from(mapAct.values());
+            activitiesData.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+          }
+        } catch(e) {}
+
         // Cập nhật lại KPI sau khi gộp cloud
         const localBreath = parseInt(localStorage.getItem('CHAM_STAT_breathing') || '0', 10);
         const localTimer = parseInt(localStorage.getItem('CHAM_STAT_timer') || '0', 10);
         const totalB = Math.max(cloudBreath, localBreath);
         const totalT = Math.max(cloudTimer, localTimer);
         document.getElementById('kpiTotalStudents').textContent = studentsData.length;
+        document.getElementById('kpiActivityCount').textContent = activitiesData.length;
         document.getElementById('kpiBreathingCount').textContent = totalB;
         document.getElementById('kpiTimerCount').textContent = totalT;
         document.getElementById('kpiJournalCount').textContent = journalsData.length;
 
+        renderActivitiesTable();
         renderStudentsTable();
         renderJournalsList();
 
@@ -794,6 +872,62 @@
         console.warn('Lưu ý đồng bộ Firestore (Đã hiển thị dữ liệu cục bộ an toàn):', err.message);
         updateCloudStatusBadge(false);
       }
+    }
+
+    function renderActivitiesTable(dataToRender = null) {
+      const list = dataToRender || activitiesData;
+      const tbody = document.getElementById('activityTableBody');
+      if (!tbody) return;
+
+      if (!list || list.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:32px; color:var(--text-muted);"><i class="fa-solid fa-magnifying-glass-chart" style="font-size:26px; color:var(--sage-400); margin-bottom:8px; display:block;"></i>Chưa có lượt tương tác hoặc tra cứu nào được ghi nhận.<br><small>Hệ thống sẽ tự động cập nhật theo thời gian thực khi học sinh tìm kiếm từ khóa, đọc thẻ quạt hoặc tập thở.</small></td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = list.map(item => {
+        let timeStr = item.clientTime;
+        if (!timeStr && item.timestamp) {
+          timeStr = new Date(item.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date(item.timestamp).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+        }
+        if (!timeStr && item.createdAt && typeof item.createdAt.toDate === 'function') {
+          timeStr = new Date(item.createdAt.toDate()).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date(item.createdAt.toDate()).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+        }
+        timeStr = timeStr || 'Vừa xong';
+
+        let badgeHtml = '';
+        const cat = (item.category || '').toLowerCase();
+        if (cat === 'search') {
+          badgeHtml = '<span style="background:#FEF3C7; color:#B45309; padding:3px 8px; border-radius:6px; font-weight:700; font-size:11px; display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-magnifying-glass"></i> Tìm kiếm</span>';
+        } else if (cat === 'fan_card') {
+          badgeHtml = '<span style="background:var(--sage-100); color:var(--sage-800); padding:3px 8px; border-radius:6px; font-weight:700; font-size:11px; display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-layer-group"></i> Nan thẻ quạt</span>';
+        } else if (cat === 'breathing') {
+          badgeHtml = '<span style="background:#E0F2FE; color:#0369A1; padding:3px 8px; border-radius:6px; font-weight:700; font-size:11px; display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-wind"></i> Thở 4-7-8</span>';
+        } else if (cat === 'timer') {
+          badgeHtml = '<span style="background:var(--orange-100); color:var(--orange-800); padding:3px 8px; border-radius:6px; font-weight:700; font-size:11px; display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-stopwatch"></i> Học 5 phút</span>';
+        } else if (cat === 'journal') {
+          badgeHtml = '<span style="background:#F3E8FF; color:#7E22CE; padding:3px 8px; border-radius:6px; font-weight:700; font-size:11px; display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-book-bookmark"></i> Nhật ký</span>';
+        } else {
+          badgeHtml = '<span style="background:#F1F5F9; color:#475569; padding:3px 8px; border-radius:6px; font-weight:700; font-size:11px; display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-bolt"></i> Tương tác</span>';
+        }
+
+        const isLocal = item.source === 'local' || (!item.source && !item.createdAt);
+
+        return `
+          <tr>
+            <td><small style="color:var(--text-secondary); font-weight:600;">${timeStr}</small></td>
+            <td>
+              <strong>${escapeHtml(item.studentName || 'Học sinh')}</strong>
+              ${isLocal ? '<span style="font-size:9.5px; background:#DCFCE7; color:#15803D; padding:2px 5px; border-radius:4px; margin-left:4px; font-weight:700;">Trực tiếp</span>' : ''}
+              <br><small style="color:var(--text-muted);">${escapeHtml(item.className || 'PTDTNT Lào Cai')}</small>
+            </td>
+            <td>${badgeHtml}</td>
+            <td>
+              <strong style="color:var(--text-primary); font-size:13px;">${escapeHtml(item.action || '')}</strong>
+              ${item.details ? `<br><small style="color:var(--text-secondary); font-style:italic;">${escapeHtml(item.details)}</small>` : ''}
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
     function renderStudentsTable() {
@@ -916,6 +1050,16 @@
         csvContent += `"${name}","${cls}","${mail}",${breath},${timer},"${last}",${msgs}\n`;
       });
 
+      activitiesData.forEach(a => {
+        const time = (a.clientTime || 'Gần đây').replace(/,/g, ' ');
+        const sName = (a.studentName || 'Học sinh').replace(/,/g, ' ');
+        const sClass = (a.className || 'PTDTNT Lào Cai').replace(/,/g, ' ');
+        const cat = (a.category || 'Tương tác').replace(/,/g, ' ');
+        const act = (a.action || '').replace(/"/g, '""');
+        const det = (a.details || '').replace(/"/g, '""');
+        csvContent += `"${time}","${sName}","${sClass}","${cat}","${act} ${det ? '- ' + det : ''}"\n`;
+      });
+
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -930,6 +1074,26 @@
     // Nút làm mới dữ liệu
     const refreshBtn = document.getElementById('refreshStudentsBtn');
     if (refreshBtn) refreshBtn.addEventListener('click', loadFirebaseAdminData);
+
+    const refreshActivityBtn = document.getElementById('refreshActivityBtn');
+    if (refreshActivityBtn) refreshActivityBtn.addEventListener('click', loadFirebaseAdminData);
+
+    // Bộ lọc trực tiếp danh sách hoạt động học sinh
+    const filterActivityInput = document.getElementById('filterActivityInput');
+    if (filterActivityInput) {
+      filterActivityInput.addEventListener('input', (e) => {
+        const q = (e.target.value || '').toLowerCase().trim();
+        if (!q) {
+          renderActivitiesTable(activitiesData);
+          return;
+        }
+        const filtered = activitiesData.filter(item => {
+          const combined = ((item.studentName || '') + ' ' + (item.className || '') + ' ' + (item.action || '') + ' ' + (item.category || '') + ' ' + (item.details || '')).toLowerCase();
+          return combined.includes(q);
+        });
+        renderActivitiesTable(filtered);
+      });
+    }
 
     /* ==========================================================================
        XÁC THỰC MẬT KHẨU "quanli" & TOÀN QUYỀN ĐIỀU KHIỂN (MASTER CONTROL)
@@ -990,6 +1154,7 @@
         if (confirm('⚠️ Bạn có chắc chắn muốn làm sạch toàn bộ dữ liệu tin nhắn, nhật ký thử nghiệm trên trình duyệt để chuẩn bị cho đợt can thiệp mới?')) {
           localStorage.removeItem('CHAM_CHAT_SESSIONS');
           localStorage.removeItem('CHAM_JOURNAL_ENTRIES');
+          localStorage.removeItem('CHAM_ACTIVITY_LOG');
           localStorage.removeItem('CHAM_STAT_breathing');
           localStorage.removeItem('CHAM_STAT_timer');
           localStorage.removeItem('CHAM_FAN_CLICKS');

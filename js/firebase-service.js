@@ -435,6 +435,7 @@
     }
 
     logEvent('save_journal_entry');
+    logStudentActivity('Lưu bài viết Nhật ký tự trắc ẩn', 'journal', (event || '').slice(0, 60));
     return entry;
   }
 
@@ -681,8 +682,111 @@
     getJournalEntries,
     recordUserStat,
     getLocalStats,
+    logStudentActivity,
+    getStudentActivities,
     checkFirestoreStatus
   };
+
+  // Ghi nhận mọi hoạt động tương tác của học sinh (Tìm kiếm, Click nan thẻ quạt, Thở, Bấm giờ, v.v.)
+  async function logStudentActivity(action, category = 'interaction', details = '') {
+    const studentName = currentUser 
+      ? (currentUser.displayName || (currentUser.email ? currentUser.email.split('@')[0] : 'Học sinh'))
+      : 'Học sinh PTDTNT Lào Cai';
+    const className = currentUser 
+      ? (currentUser.className || 'PTDTNT THPT Lào Cai')
+      : 'Lớp 11 (Nội trú KTX)';
+
+    const activityEntry = {
+      id: 'act_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+      studentName: studentName,
+      className: className,
+      uid: currentUser ? currentUser.uid : sessionId,
+      action: action,
+      category: category, // 'search' | 'fan_card' | 'breathing' | 'timer' | 'journal' | 'chat'
+      details: details || '',
+      timestamp: Date.now(),
+      clientTime: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + new Date().toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })
+    };
+
+    // 1. Lưu LocalStorage ngay lập tức (0ms không trễ)
+    try {
+      let activities = JSON.parse(localStorage.getItem('CHAM_ACTIVITY_LOG') || '[]');
+      activities.unshift(activityEntry);
+      if (activities.length > 100) activities = activities.slice(0, 100);
+      localStorage.setItem('CHAM_ACTIVITY_LOG', JSON.stringify(activities));
+    } catch (e) {
+      console.warn('Lỗi lưu hoạt động cục bộ:', e);
+    }
+
+    // 2. Đồng bộ lên Firebase Firestore nếu khả dụng
+    if (db) {
+      try {
+        const firestoreDoc = {
+          ...activityEntry,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+
+        // Ghi vào collection tổng hợp toàn trường
+        await db.collection('activities').add(firestoreDoc).catch(()=>{});
+
+        // Ghi vào trang cá nhân học sinh nếu có tài khoản
+        if (currentUser) {
+          await db.collection('users')
+            .doc(currentUser.uid)
+            .collection('activities')
+            .add(firestoreDoc).catch(()=>{});
+
+          await db.collection('users').doc(currentUser.uid).set({
+            lastActive: firebase.firestore.FieldValue.serverTimestamp(),
+            lastAction: action
+          }, { merge: true }).catch(()=>{});
+        }
+
+        // Cập nhật bộ đếm thống kê trường học
+        const statsUpdate = {
+          total_activities: firebase.firestore.FieldValue.increment(1),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        if (category) {
+          statsUpdate[`actions.${category}`] = firebase.firestore.FieldValue.increment(1);
+        }
+        await db.collection('school_stats').doc('laocai').set(statsUpdate, { merge: true }).catch(()=>{});
+      } catch (err) {
+        console.warn('Lỗi ghi nhận hoạt động Firebase:', err.message);
+      }
+    }
+
+    logEvent('student_activity', { category, action });
+    return activityEntry;
+  }
+
+  // Lấy danh sách hoạt động học sinh gần nhất (phục vụ trang quản lý)
+  async function getStudentActivities(limitCount = 50) {
+    let localActivities = [];
+    try {
+      localActivities = JSON.parse(localStorage.getItem('CHAM_ACTIVITY_LOG') || '[]');
+    } catch(e) { localActivities = []; }
+
+    if (!db) return localActivities;
+
+    try {
+      const snap = await db.collection('activities')
+        .orderBy('createdAt', 'desc')
+        .limit(limitCount)
+        .get();
+
+      if (!snap.empty) {
+        const cloudActivities = [];
+        snap.forEach(doc => {
+          cloudActivities.push({ id: doc.id, ...doc.data() });
+        });
+        return cloudActivities;
+      }
+    } catch(err) {
+      console.warn('Lấy hoạt động từ Firestore:', err.message);
+    }
+    return localActivities;
+  }
 
   // Kiểm tra tính sẵn sàng của Cloud Firestore
   async function checkFirestoreStatus() {

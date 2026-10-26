@@ -779,3 +779,348 @@ Mình sẽ cùng bạn phân tích và gỡ rối từng nút thắt một cách
   const randomIndex = Math.floor(Math.random() * defaultResponses.length);
   return defaultResponses[randomIndex];
 };
+
+// 4. CƠ SỞ DỮ LIỆU TÌM KIẾM NHANH (QUICK SEARCH DATABASE) TOÀN DIỆN
+window.CHAM_SEARCH_DATABASE = [
+  // --- 14 NAN THẺ QUẠT BỎ TÚI ---
+  {
+    type: 'fan',
+    fanId: 1,
+    tag: 'Nan 01 • Xanh Sage',
+    title: 'Bìa CHẠM: Điểm Tựa Thấu Cảm',
+    snippet: 'Chạm để bứt phá - Tâm an trí vững, điểm tựa thấu cảm học đường Lào Cai.',
+    keywords: 'bia cham diem tua thau cam tam an tri vung 01 nan 1'
+  },
+  {
+    type: 'fan',
+    fanId: 2,
+    tag: 'Nan 02 • Xanh Sage',
+    title: 'Khi bị điểm kém / thi không như ý',
+    snippet: '3 bước tự tha thứ: Chánh niệm, Tính đồng loại và Lòng tự trắc ẩn.',
+    keywords: 'diem kem thi truot diem thap that vong sua bai sai tu tha thu 02 nan 2'
+  },
+  {
+    type: 'fan',
+    fanId: 3,
+    tag: 'Nan 03 • Xanh Sage',
+    title: 'Khi quá tải bài vở ở trường KTX',
+    snippet: 'Kỹ thuật Thở 4-7-8 giúp hạ nhiệt nhịp tim và giải tỏa cortisol căng thẳng.',
+    keywords: 'qua tai bai vo ktx ngop met ap luc tho 4-7-8 ha nhiet 03 nan 3'
+  },
+  {
+    type: 'fan',
+    fanId: 4,
+    tag: 'Nan 04 • Xanh Sage',
+    title: 'Khi tự ti, so sánh với bạn bè',
+    snippet: 'Quy tắc tiến bộ 1% mỗi ngày - Mỗi bông hoa nở vào một mùa riêng.',
+    keywords: 'tu ti so sanh ban be con nha nguoi ta peer pressure kem coi tien bo 1% 04 nan 4'
+  },
+  {
+    type: 'fan',
+    fanId: 5,
+    tag: 'Nan 05 • Xanh Sage',
+    title: 'Khi mất ngủ, trằn trọc lo âu ban đêm',
+    snippet: 'Kỹ thuật quét cơ thể (Body Scan 2 phút) và bài tập xả lo lắng Brain Dump.',
+    keywords: 'mat ngu tran troc lo au dem trang dem body scan quet co the ngu ngon 05 nan 5'
+  },
+  {
+    type: 'fan',
+    fanId: 6,
+    tag: 'Nan 06 • Xanh Sage',
+    title: 'Khi dằn vặt vì một sai lầm / Tự trách',
+    snippet: 'Bức thư gửi chính mình từ người bạn thân nhất (Tự trắc ẩn Kristin Neff).',
+    keywords: 'dan vat sai lam tu trach minh an han hoi han buc thu gui chinh minh 06 nan 6'
+  },
+  {
+    type: 'fan',
+    fanId: 7,
+    tag: 'Nan 07 • Xanh Sage',
+    title: 'Thước đo năng lượng học tập',
+    snippet: 'Nhận diện vạch pin tinh thần: Vạch Xanh, Vạch Vàng và Vạch Đỏ khẩn cấp.',
+    keywords: 'thuoc do nang luong het pin kiet suc vach do sac pin phuc hoi 07 nan 7'
+  },
+  {
+    type: 'fan',
+    fanId: 8,
+    tag: 'Nan 08 • Cam Đào',
+    title: 'Bìa Bứt Phá: Tự Điều Chỉnh Học Tập (SRL)',
+    snippet: 'Khai mở 3 pha tự học Barry Zimmerman: Lập kế hoạch - Giám sát - Tự đánh giá.',
+    keywords: 'but pha tu dieu chinh hoc tap srl zimmerman lap ke hoach 08 nan 8'
+  },
+  {
+    type: 'fan',
+    fanId: 9,
+    tag: 'Nan 09 • Cam Đào',
+    title: 'Khi gặp bài tập quá khó / Bế tắc',
+    snippet: 'Phương pháp phân rã bài toán vi mô & Kỹ thuật đọc đảo ngược SQ3R.',
+    keywords: 'bai kho be tac toan ly hoa kho khong hieu phan ra vi mo sq3r 09 nan 9'
+  },
+  {
+    type: 'fan',
+    fanId: 10,
+    tag: 'Nan 10 • Cam Đào',
+    title: 'Kỹ thuật Feynman 2 phút: Học sâu nhớ lâu',
+    snippet: 'Giảng lại bài học cho một đứa trẻ 10 tuổi hiểu để phát hiện lỗ hổng kiến thức.',
+    keywords: 'feynman 2 phut hoc sau nho lau chu dong active recall quen bai 10 nan 10'
+  },
+  {
+    type: 'fan',
+    fanId: 11,
+    tag: 'Nan 11 • Cam Đào',
+    title: 'Quy tắc 5 Phút & Pomodoro: Đánh bay trì hoãn',
+    snippet: 'Vượt qua sức ỳ với 5 phút đầu tiên - Chia nhỏ phiên học 25 phút tập trung.',
+    keywords: 'quy tac 5 phut pomodoro tri hoan luoi suc y tap trung 11 nan 11'
+  },
+  {
+    type: 'fan',
+    fanId: 12,
+    tag: 'Nan 12 • Cam Đào',
+    title: 'Cách hỏi bài thầy cô và bạn bè hiệu quả',
+    snippet: 'Công thức 3 bước: Em đã làm đến đây, em vướng chỗ này, nhờ thầy cô chỉ dẫn.',
+    keywords: 'hoi bai thay co ban be ngai hoi so hoi cong thuc 3 buoc 12 nan 12'
+  },
+  {
+    type: 'fan',
+    fanId: 13,
+    tag: 'Nan 13 • Cam Đào',
+    title: 'Chống xao nhãng điện thoại / Mạng xã hội',
+    snippet: 'Kỹ thuật Hộp Cách Ly 2 mét & Tờ giấy trắng "Chờ xử lý" khi học bài.',
+    keywords: 'dien thoai mang xa hoi xao nhang luot tiktok facebook game nghien 13 nan 13'
+  },
+  {
+    type: 'fan',
+    fanId: 14,
+    tag: 'Nan 14 • Cam Đào',
+    title: 'Sức mạnh của từ "CHƯA" (Growth Mindset)',
+    snippet: 'Thay vì "mình dốt", hãy nói "mình CHƯA làm được ở thời điểm hiện tại".',
+    keywords: 'tu duy phat trien growth mindset tu chua carol dweck no-ron thong minh 14 nan 14'
+  },
+
+  // --- 25 TÌNH HUỐNG TÂM LÝ & TỰ HỌC NGUỒN CỦA LÀO CAI ---
+  {
+    type: 'scenario',
+    id: 1,
+    tag: 'Tình Huống 1 • Điểm Số',
+    title: 'Điểm kém bài thi thử / kiểm tra giữa kỳ',
+    snippet: 'Cách xoa dịu nỗi buồn, không tự trách và 3 bước khoanh vùng chữa bài sai.',
+    prompt: 'Mình vừa bị điểm kém bài kiểm tra, cảm thấy rất hụt hẫng và thất vọng về bản thân...',
+    keywords: 'diem kem thi thu thi giua ky diem 1 2 3 4 5 rot mon rot hoc sinh'
+  },
+  {
+    type: 'scenario',
+    id: 2,
+    tag: 'Tình Huống 2 • Gia Đình',
+    title: 'Bị bố mẹ so sánh với "con nhà người ta"',
+    snippet: 'Vượt qua nỗi tủi thân khi bị so sánh, định vị mốc thời gian phát triển riêng.',
+    prompt: 'Bố mẹ cứ so sánh mình với con nhà người ta khiến mình rất tủi thân và áp lực...',
+    keywords: 'con nha nguoi ta so sanh bo me chê trach gia dinh ky vong'
+  },
+  {
+    type: 'scenario',
+    id: 3,
+    tag: 'Tình Huống 3 • Trì Hoãn',
+    title: 'Quá tải bài tập & Trì hoãn học đêm',
+    snippet: 'Hiện tượng não đóng băng vì ngợp bài vở và kỹ thuật 2 phút mở vở bắt đầu.',
+    prompt: 'Bài tập nhiều quá làm mình bị ngợp, cứ chần chừ trì hoãn không muốn làm gì cả...',
+    keywords: 'qua tai bai tap tri hoan luoi hoc ngop bai dong bang hanh dong'
+  },
+  {
+    type: 'scenario',
+    id: 4,
+    tag: 'Tình Huống 4 • Phương Hướng',
+    title: 'Mất gốc kiến thức / Mất phương hướng',
+    snippet: 'Chiến thuật chọn 1 chủ đề cốt lõi nhất và chia nhỏ 30 phút để vá gốc.',
+    prompt: 'Mình cảm thấy bị mất gốc kiến thức và không biết phải bắt đầu học lại từ đâu...',
+    keywords: 'mat goc mat phuong huong khong biet bat dau tu dau hoang mang'
+  },
+  {
+    type: 'scenario',
+    id: 5,
+    tag: 'Tình Huống 5 • Kiệt Sức',
+    title: 'Thiếu ngủ, kiệt sức, muốn buông xuôi',
+    snippet: 'Quy trình hồi phục năng lượng khẩn cấp: Gập sách, uống nước ấm và ngủ sớm.',
+    prompt: 'Dạo này mình kiệt sức và thiếu ngủ trầm trọng, nhiều lúc chỉ muốn buông xuôi...',
+    keywords: 'thieu ngu kiet suc buon ngu muon bo cuoc nan long burnout sap nguon'
+  },
+  {
+    type: 'scenario',
+    id: 6,
+    tag: 'Tình Huống 6 • Áp Lực Bạn Bè',
+    title: 'Áp lực đồng lứa (Peer pressure)',
+    snippet: 'Thấy bạn bè học ngày đêm khiến mình lo sợ - Giữ vững làn chạy marathon riêng.',
+    prompt: 'Nhìn các bạn xung quanh học ngày học đêm làm mình thấy bất an và tụt hậu quá...',
+    keywords: 'peer pressure ap luc dong lua ban be hoc ngay dem chay dua tut hau'
+  },
+  {
+    type: 'scenario',
+    id: 7,
+    tag: 'Tình Huống 7 • Thi Cử',
+    title: 'Sợ thi trượt Nguyện vọng 1 (NV1)',
+    snippet: 'Đại học là một con đường, không phải duy nhất; tập trung giải quyết mục tiêu hôm nay.',
+    prompt: 'Mình rất sợ thi trượt nguyện vọng 1, tương lai mờ mịt không biết đi về đâu...',
+    keywords: 'so thi truot nv1 nguyen vong 1 truot dai hoc tuong lai mo mit'
+  },
+  {
+    type: 'scenario',
+    id: 8,
+    tag: 'Tình Huống 8 • Tập Trung',
+    title: 'Nghiện điện thoại, TikTok, lướt mạng xã hội',
+    snippet: 'Giải mã cơ chế dopamine của app và chiến lược hộp cách ly 2 mét.',
+    prompt: 'Mình cứ bị dán mắt vào điện thoại lướt mạng xã hội hàng giờ mà không dứt ra học được...',
+    keywords: 'nghien dien thoai tiktok facebook instagram game luot mang mat tap trung'
+  },
+  {
+    type: 'scenario',
+    id: 9,
+    tag: 'Tình Huống 9 • Ghi Nhớ',
+    title: 'Học trước quên sau / Não cá vàng',
+    snippet: 'Áp dụng đường cong quên Ebbinghaus và phương pháp lặp lại ngắt quãng.',
+    prompt: 'Mình học trước quên sau, vừa học tối hôm trước sáng hôm sau đã quên sạch...',
+    keywords: 'hoc truoc quen sau nao ca vang quen cong thuc active recall ebbinghaus'
+  },
+  {
+    type: 'scenario',
+    id: 10,
+    tag: 'Tình Huống 10 • Quan Hệ Bạn Bè',
+    title: 'Xung đột, cãi nhau với bạn bè / người yêu mùa thi',
+    snippet: 'Kỹ thuật cất cảm xúc vào chiếc hộp tạm thời để tập trung cho kỳ thi quan trọng.',
+    prompt: 'Mình vừa cãi nhau với bạn thân/người yêu, tâm trạng rối bời không học nổi...',
+    keywords: 'xung dot cai nhau gian nhau ban be nguoi yeu chia tay roi boi'
+  },
+  {
+    type: 'scenario',
+    id: 11,
+    tag: 'Tình Huống 11 • Môn Học',
+    title: 'Học thuộc môn Xã hội khô khan (Sử, Địa, GDCD)',
+    snippet: 'Chuyển văn bản dài thành sơ đồ tư duy 4 Keywords và liên kết câu chuyện.',
+    prompt: 'Làm sao để học thuộc các môn chữ dài như Lịch sử, Địa lý, GDCD mà không bị buồn ngủ?',
+    keywords: 'hoc thuoc su dia gdcd van xa hoi chu dai kho khan so do tu duy'
+  },
+  {
+    type: 'scenario',
+    id: 12,
+    tag: 'Tình Huống 12 • Phòng Thi',
+    title: 'Áp lực hoảng loạn trước giờ vào phòng thi',
+    snippet: 'Bài tập tiếp đất Grounding 5-4-3-2-1 và nhịp thở hạ nhiệt 4-4-6.',
+    prompt: 'Trước khi vào phòng thi tim mình đập thình thịch, tay chân run rẩy và đầu óc trống rỗng...',
+    keywords: 'hoang loan phong thi run so tim dap nhanh run tay chong mat'
+  },
+  {
+    type: 'scenario',
+    id: 13,
+    tag: 'Tình Huống 13 • Định Hướng',
+    title: 'Phân vân chọn Ngành nghề vs Nguyện vọng Gia đình',
+    snippet: 'Dùng ma trận SWOT đối thoại ôn hòa, cân bằng đam mê và kỳ vọng của bố mẹ.',
+    prompt: 'Bố mẹ muốn mình học ngành kinh tế nhưng mình lại thích công nghệ/nghệ thuật...',
+    keywords: 'chon nganh chon nghe dai hoc nguyen vong bo me gia dinh ep'
+  },
+  {
+    type: 'scenario',
+    id: 14,
+    tag: 'Tình Huống 14 • KTX Nội Trú',
+    title: 'Cô đơn, nhớ nhà ở Ký túc xá Nội trú',
+    snippet: 'Góc thấu cảm dành riêng cho học sinh KTX trường PTDTNT THPT Lào Cai.',
+    prompt: 'Ở ký túc xá xa nhà nhiều lúc mình thấy cô đơn, nhớ gia đình và tủi thân vô cùng...',
+    keywords: 'ktx ky tuc xa nho nha co don noi tru laocai xa que'
+  },
+  {
+    type: 'scenario',
+    id: 15,
+    tag: 'Tình Huống 15 • SOS',
+    title: 'Cần hỗ trợ tâm lý khẩn cấp (Hotline 111)',
+    snippet: 'Sơ cứu tâm lý khủng hoảng (PFA), đường dây nóng 111 và 1900 599 930 miễn phí 24/7.',
+    prompt: 'Mình cảm thấy quá bế tắc và không muốn tiếp tục nữa, mình cần một người lắng nghe...',
+    keywords: 'sos khan cap tu hai be tac bien mat khong muon song hotline 111'
+  },
+  {
+    type: 'scenario',
+    id: 16,
+    tag: 'Tình Huống 16 • Điểm Liệt',
+    title: 'Học lệch môn / Nguy cơ dính điểm liệt',
+    snippet: 'Chiến thuật chạm mốc an toàn Safety (từ 3 điểm lên 5-6 điểm) cho môn yếu.',
+    prompt: 'Mình học lệch quá nhiều và rất sợ dính điểm liệt môn tiếng Anh/Toán...',
+    keywords: 'hoc lech diem liet tieng anh toan nguy co truot tot nghiep'
+  },
+  {
+    type: 'scenario',
+    id: 17,
+    tag: 'Tình Huống 17 • Hoàn Hảo Hóa',
+    title: 'Áp lực chủ nghĩa hoàn hảo / Tự dằn vặt',
+    snippet: 'Cho phép bản thân có 1-2 lỗi sai để học hỏi, chuyển hóa thành sự tiến bộ lành mạnh.',
+    prompt: 'Mình luôn bị ám ảnh bởi sự hoàn hảo, chỉ cần làm sai một câu là mình dằn vặt cả ngày...',
+    keywords: 'chu nghia hoan hao qua khat khe dan vat ban than tu trach'
+  },
+  {
+    type: 'scenario',
+    id: 18,
+    tag: 'Tình Huống 18 • Khối Thi',
+    title: 'Phân vân chọn Khối thi (A00, B00, C00, D01...)',
+    snippet: 'Ma trận chọn làn xe chạy nhanh nhất theo năng lực thực tế và điểm số.',
+    prompt: 'Mình đang phân vân không biết nên chọn thi khối A hay khối D để có cơ hội đỗ cao nhất...',
+    keywords: 'chon khoi thi khoi a khoi b khoi c khoi d to hop xet tuyen'
+  },
+  {
+    type: 'scenario',
+    id: 19,
+    tag: 'Tình Huống 19 • Học Phí',
+    title: 'Áp lực học phí & Hoàn cảnh kinh tế gia đình',
+    snippet: 'Thông tin quỹ học bổng, tín dụng sinh viên 0% và lộ trình săn học bổng giảm gánh nặng.',
+    prompt: 'Mình lo lên Đại học học phí đắt đỏ bố mẹ ở quê không gánh nổi...',
+    keywords: 'hoc phi kinh te gia dinh kho khan hoc bong vay von sinh vien'
+  },
+  {
+    type: 'scenario',
+    id: 20,
+    tag: 'Tình Huống 20 • Giấc Ngủ',
+    title: 'Mất ngủ triền miên / Đầu óc căng thẳng ban đêm',
+    snippet: 'Cách ngắt kết nối trước khi ngủ, bài tập thở và âm thanh thư giãn não bộ.',
+    prompt: 'Đêm nào mình cũng trằn trọc đến 2-3 giờ sáng không ngủ được vì suy nghĩ miên man...',
+    keywords: 'mat ngu trien mien tran troc dem khuya kho ngu dau oc cang thang'
+  },
+  {
+    type: 'scenario',
+    id: 21,
+    tag: 'Tình Huống 21 • Nước Rút',
+    title: 'Kiệt sức giai đoạn nước rút 30 ngày trước thi',
+    snippet: 'Chiến thuật giữ nhịp: Ưu tiên chất lượng ôn tập hơn số lượng giờ thức đêm.',
+    prompt: 'Còn 1 tháng nữa là thi mà mình thấy đuối sức quá, cảm giác kiến thức rơi rụng hết...',
+    keywords: 'nuoc rut 30 ngay truoc thi kiet suc duoi suc giai doan cuoi'
+  },
+  {
+    type: 'scenario',
+    id: 22,
+    tag: 'Tình Huống 22 • ĐGNL / ĐGTD',
+    title: 'Áp lực kỳ thi Đánh Giá Năng Lực / Tư Duy',
+    snippet: 'Chiến thuật làm bài 3 lượt và quản lý thời gian thi trắc nghiệm tốc độ cao.',
+    prompt: 'Mình chuẩn bị thi Đánh giá năng lực ĐHQG mà thấy đề dài quá làm không kịp thời gian...',
+    keywords: 'danh gia nang luc dgnl dgtd dai hoc quoc gia bach khoa de thi dai'
+  },
+  {
+    type: 'scenario',
+    id: 23,
+    tag: 'Tình Huống 23 • Tình Cảm',
+    title: 'Xao nhãng vì Crush / Chuyện tình cảm học trò',
+    snippet: 'Chuyển hóa tình cảm tuổi học trò thành động lực tích cực: Cùng nhau đỗ Đại học!',
+    prompt: 'Dạo này mình hay tương tư crush, ngồi học cứ nghĩ về người ta mà không tập trung được...',
+    keywords: 'crush tinh cam nguoi yeu thich mot nguoi tuong tu xao nhang'
+  },
+  {
+    type: 'scenario',
+    id: 24,
+    tag: 'Tình Huống 24 • Sức Khỏe',
+    title: 'Bị ốm, sốt ngay trước ngày thi quan trọng',
+    snippet: 'Quy tắc ưu tiên sức khỏe số 1: Nghỉ ngơi trọn vẹn để cơ thể hồi phục.',
+    prompt: 'Sắp thi đến nơi rồi mà mình lại bị ốm sốt, mình lo lắng kiến thức sẽ bị quên hết...',
+    keywords: 'bi om sot dau dau cam cum ngay thi quen kien thuc'
+  },
+  {
+    type: 'scenario',
+    id: 25,
+    tag: 'Tình Huống 25 • Cuối Cấp',
+    title: 'Hẫng hụt, sợ chia tay tuổi học trò lớp 12',
+    snippet: 'Biến cảm xúc luyến tiếc thành động lực phấn đấu để cả lớp cùng đỗ đạt ước mơ.',
+    prompt: 'Năm cuối cấp sắp chia tay thầy cô bạn bè mình thấy hụt hẫng và xúc động quá...',
+    keywords: 'chia tay cuoi cap lop 12 chia tay thay co ban be luu but planner a5'
+  }
+];
+

@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link rel="stylesheet" href="css/style.css?v=6">
+  <link rel="stylesheet" href="css/style.css?v=20261026_v6">
   <link rel="icon" type="image/jpeg" href="assets/avatar.jpg?v=6">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
@@ -345,6 +345,17 @@
             <p id="schoolBroadcastText"></p>
           </div>
           <button class="broadcast-close-btn" id="closeBroadcastBannerBtn" title="Đóng thông báo"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <!-- THANH TÌM KIẾM NHANH (QUICK SEARCH) 14 NAN THẺ QUẠT & TÌNH HUỐNG -->
+        <div class="chat-search-wrap" id="chatSearchWrap">
+          <div class="chat-search-bar">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input type="text" id="quickSearchInput" placeholder="Tìm kiếm nhanh: Điểm kém, mất ngủ, trì hoãn, KTX, Nan thẻ quạt..." autocomplete="off">
+            <button class="clear-search-btn hidden" id="clearSearchBtn" title="Xóa tìm kiếm"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+          <!-- DROPDOWN KẾT QUẢ TÌM KIẾM TRỰC TIẾP -->
+          <div class="search-results-dropdown hidden" id="searchResultsDropdown"></div>
         </div>
 
         <!-- Welcome banner -->
@@ -811,9 +822,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
-  <!-- Scripts ứng dụng CHẠM (v20261024_v5 - Firestore Real-time Sync) -->
-  <script src="js/firebase-service.js?v=20261024_v5"></script>
-  <script src="js/knowledge-base.js?v=20261024_v5"></script>
-  <script src="js/app.js?v=20261024_v5"></script>
+  <!-- Scripts ứng dụng CHẠM (v20261026_v6 - Quick Search & Live Activity Stream) -->
+  <script src="js/firebase-service.js?v=20261026_v6"></script>
+  <script src="js/knowledge-base.js?v=20261026_v6"></script>
+  <script src="js/app.js?v=20261026_v6"></script>
 </body>
 </html>

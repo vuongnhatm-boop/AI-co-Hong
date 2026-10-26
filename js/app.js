@@ -426,9 +426,210 @@ document.addEventListener('DOMContentLoaded', () => {
     chip.addEventListener('click', () => {
       const scenarioText = chip.querySelector('span')?.textContent || '';
       if (scenarioText) {
+        if (window.chamFirebase && typeof window.chamFirebase.logStudentActivity === 'function') {
+          window.chamFirebase.logStudentActivity('Chọn tình huống nhanh: ' + scenarioText.slice(0, 45) + '...', 'scenario', scenarioText);
+        }
         sendQuickMessage(scenarioText);
       }
     });
+  });
+
+  /* ==========================================================================
+     QUICK SEARCH LOGIC (TÌM KIẾM NHANH 14 NAN THẺ QUẠT & 25 TÌNH HUỐNG)
+     ========================================================================== */
+  const quickSearchInput = document.getElementById('quickSearchInput');
+  const clearSearchBtn = document.getElementById('clearSearchBtn');
+  const searchResultsDropdown = document.getElementById('searchResultsDropdown');
+
+  function removeVietnameseTones(str) {
+    if (!str) return '';
+    return str
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'd')
+      .replace(/Đ/g, 'D')
+      .toLowerCase()
+      .trim();
+  }
+
+  function renderSearchResults(query) {
+    if (!searchResultsDropdown) return;
+    const cleanQuery = removeVietnameseTones(query);
+
+    if (!cleanQuery) {
+      searchResultsDropdown.classList.add('hidden');
+      searchResultsDropdown.innerHTML = '';
+      if (clearSearchBtn) clearSearchBtn.classList.add('hidden');
+      return;
+    }
+
+    if (clearSearchBtn) clearSearchBtn.classList.remove('hidden');
+
+    const searchDb = window.CHAM_SEARCH_DATABASE || [];
+    const matched = searchDb.filter(item => {
+      const titleClean = removeVietnameseTones(item.title || '');
+      const keywordsClean = removeVietnameseTones(item.keywords || '');
+      const snippetClean = removeVietnameseTones(item.snippet || '');
+      const tagClean = removeVietnameseTones(item.tag || '');
+      return (
+        titleClean.includes(cleanQuery) ||
+        keywordsClean.includes(cleanQuery) ||
+        snippetClean.includes(cleanQuery) ||
+        tagClean.includes(cleanQuery)
+      );
+    });
+
+    if (matched.length === 0) {
+      searchResultsDropdown.innerHTML = `
+        <div class="search-empty-state">
+          <i class="fa-regular fa-face-smile"></i>
+          <p>Không tìm thấy nội dung khớp với "<strong>${escapeHtml(query)}</strong>".</p>
+          <small>Bạn có thể gõ trực tiếp câu hỏi vào ô chat bên dưới để CHẠM lắng nghe và hỗ trợ nhé!</small>
+        </div>
+      `;
+      searchResultsDropdown.classList.remove('hidden');
+      return;
+    }
+
+    const fanCards = matched.filter(m => m.type === 'fan');
+    const scenarios = matched.filter(m => m.type === 'scenario');
+
+    let html = '';
+
+    if (fanCards.length > 0) {
+      html += `
+        <div class="search-group-header">
+          <i class="fa-solid fa-layer-group" style="color:var(--sage-600);"></i> 14 Nan Thẻ Quạt Bỏ Túi (${fanCards.length})
+        </div>
+      `;
+      fanCards.forEach(f => {
+        const isOrange = f.fanId >= 8;
+        const iconClass = isOrange ? 'orange' : 'sage';
+        const tagClass = isOrange ? 'orange' : 'sage';
+        html += `
+          <div class="search-result-item" data-type="fan" data-fan-id="${f.fanId}" data-title="${escapeHtml(f.title)}">
+            <div class="result-icon ${iconClass}">
+              <i class="fa-solid ${isOrange ? 'fa-bolt' : 'fa-leaf'}"></i>
+            </div>
+            <div class="result-body">
+              <div class="result-title-row">
+                <span class="result-title">${escapeHtml(f.title)}</span>
+                <span class="result-tag ${tagClass}">${f.tag}</span>
+              </div>
+              <p class="result-snippet">${escapeHtml(f.snippet)}</p>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    if (scenarios.length > 0) {
+      html += `
+        <div class="search-group-header" style="margin-top:6px;">
+          <i class="fa-solid fa-lightbulb" style="color:#0284C7;"></i> Tình Huống Can Thiệp Tâm Lý & Tự Học (${scenarios.length})
+        </div>
+      `;
+      scenarios.forEach(s => {
+        html += `
+          <div class="search-result-item" data-type="scenario" data-scenario-id="${s.id}" data-prompt="${escapeHtml(s.prompt || s.title)}" data-title="${escapeHtml(s.title)}">
+            <div class="result-icon blue">
+              <i class="fa-solid fa-comments"></i>
+            </div>
+            <div class="result-body">
+              <div class="result-title-row">
+                <span class="result-title">${escapeHtml(s.title)}</span>
+                <span class="result-tag blue">${s.tag}</span>
+              </div>
+              <p class="result-snippet">${escapeHtml(s.snippet)}</p>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    searchResultsDropdown.innerHTML = html;
+    searchResultsDropdown.classList.remove('hidden');
+
+    // Gắn sự kiện click cho từng kết quả
+    searchResultsDropdown.querySelectorAll('.search-result-item').forEach(el => {
+      el.addEventListener('click', () => {
+        const type = el.getAttribute('data-type');
+        const title = el.getAttribute('data-title') || '';
+        const rawQ = quickSearchInput.value.trim();
+
+        if (type === 'fan') {
+          const fid = el.getAttribute('data-fan-id');
+          openFanDetail(fid);
+          if (window.chamFirebase && typeof window.chamFirebase.logStudentActivity === 'function') {
+            window.chamFirebase.logStudentActivity(`Xem Nan ${fid}: ${title}`, 'fan_card', `Từ khóa tìm kiếm: "${rawQ}"`);
+          }
+        } else if (type === 'scenario') {
+          const prompt = el.getAttribute('data-prompt');
+          sendQuickMessage(prompt);
+          if (window.chamFirebase && typeof window.chamFirebase.logStudentActivity === 'function') {
+            window.chamFirebase.logStudentActivity(`Tra cứu tình huống: ${title}`, 'search', `Từ khóa tìm kiếm: "${rawQ}"`);
+          }
+        }
+
+        // Đóng dropdown sau khi bấm
+        searchResultsDropdown.classList.add('hidden');
+        quickSearchInput.value = '';
+        if (clearSearchBtn) clearSearchBtn.classList.add('hidden');
+      });
+    });
+  }
+
+  if (quickSearchInput) {
+    quickSearchInput.addEventListener('input', (e) => {
+      renderSearchResults(e.target.value);
+    });
+
+    quickSearchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const rawQ = quickSearchInput.value.trim();
+        if (!rawQ) return;
+
+        // Nếu có kết quả đầu tiên, bấm kết quả đó
+        const firstItem = searchResultsDropdown?.querySelector('.search-result-item');
+        if (firstItem) {
+          firstItem.click();
+        } else {
+          // Nếu không có trong danh mục, gửi câu hỏi vào chat cho AI CHẠM
+          sendQuickMessage(rawQ);
+          if (window.chamFirebase && typeof window.chamFirebase.logStudentActivity === 'function') {
+            window.chamFirebase.logStudentActivity(`Tìm kiếm tự do: "${rawQ}"`, 'search', rawQ);
+          }
+          searchResultsDropdown.classList.add('hidden');
+          quickSearchInput.value = '';
+          if (clearSearchBtn) clearSearchBtn.classList.add('hidden');
+        }
+      } else if (e.key === 'Escape') {
+        searchResultsDropdown.classList.add('hidden');
+      }
+    });
+
+    quickSearchInput.addEventListener('focus', () => {
+      if (quickSearchInput.value.trim()) {
+        renderSearchResults(quickSearchInput.value);
+      }
+    });
+  }
+
+  if (clearSearchBtn) {
+    clearSearchBtn.addEventListener('click', () => {
+      if (quickSearchInput) quickSearchInput.value = '';
+      if (searchResultsDropdown) searchResultsDropdown.classList.add('hidden');
+      clearSearchBtn.classList.add('hidden');
+    });
+  }
+
+  // Đóng dropdown khi bấm ra ngoài
+  document.addEventListener('click', (e) => {
+    const wrap = document.getElementById('chatSearchWrap');
+    if (wrap && !wrap.contains(e.target)) {
+      if (searchResultsDropdown) searchResultsDropdown.classList.add('hidden');
+    }
   });
 
   // Textarea auto resize & enter submit
@@ -554,6 +755,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (window.chamFirebase && typeof window.chamFirebase.recordUserStat === 'function') {
       window.chamFirebase.recordUserStat('fan_' + currentFanCardIndex);
+    }
+    if (window.chamFirebase && typeof window.chamFirebase.logStudentActivity === 'function') {
+      window.chamFirebase.logStudentActivity(`Xem ${data.num}: ${data.title}`, 'fan_card', data.quote);
     }
   };
 
@@ -692,6 +896,9 @@ document.addEventListener('DOMContentLoaded', () => {
       window.chamFirebase.logEvent('complete_breathing_478', { total_cycles: 3 });
       window.chamFirebase.recordUserStat('breathing');
     }
+    if (window.chamFirebase && typeof window.chamFirebase.logStudentActivity === 'function') {
+      window.chamFirebase.logStudentActivity('Hoàn thành bài tập Thở 4-7-8 (Hạ nhiệt hệ thần kinh)', 'breathing');
+    }
   }
 
   function stopBreathingExercise() {
@@ -744,6 +951,9 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       if (window.chamFirebase && typeof window.chamFirebase.recordUserStat === 'function') {
         window.chamFirebase.recordUserStat('timer');
+      }
+      if (window.chamFirebase && typeof window.chamFirebase.logStudentActivity === 'function') {
+        window.chamFirebase.logStudentActivity('Bật hẹn giờ 5 phút học tập (Tự điều chỉnh SRL)', 'timer');
       }
 
       timerInterval = setInterval(() => {
