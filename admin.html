@@ -673,6 +673,27 @@
       try {
         localActivities = JSON.parse(localStorage.getItem('CHAM_ACTIVITY_LOG') || '[]');
       } catch(e) { localActivities = []; }
+
+      // Tự động kết nối và trích xuất lịch sử từ các phiên thực tế nếu bảng hoạt động mới chưa có dòng nào
+      if (localActivities.length === 0 && localSessions.length > 0) {
+        localSessions.forEach((ls, idx) => {
+          const dateStr = ls.updatedAt 
+            ? new Date(ls.updatedAt).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'}) + ' ' + new Date(ls.updatedAt).toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit'})
+            : 'Hôm nay';
+          const title = ls.title ? ls.title.trim() : 'Tương tác học sinh';
+          localActivities.push({
+            id: 'legacy_' + idx,
+            studentName: 'Học sinh PTDTNT Lào Cai',
+            className: 'Phiên thực tế (KTX)',
+            action: `Trò chuyện: "${title.slice(0, 50)}${title.length > 50 ? '...' : ''}"`,
+            category: 'chat',
+            details: 'Hỏi đáp & Can thiệp tâm lý',
+            clientTime: dateStr,
+            source: 'local'
+          });
+        });
+      }
+
       activitiesData = localActivities.map(a => ({ ...a, source: 'local' }));
 
       studentsData = [];
@@ -906,6 +927,10 @@
           badgeHtml = '<span style="background:var(--orange-100); color:var(--orange-800); padding:3px 8px; border-radius:6px; font-weight:700; font-size:11px; display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-stopwatch"></i> Học 5 phút</span>';
         } else if (cat === 'journal') {
           badgeHtml = '<span style="background:#F3E8FF; color:#7E22CE; padding:3px 8px; border-radius:6px; font-weight:700; font-size:11px; display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-book-bookmark"></i> Nhật ký</span>';
+        } else if (cat === 'chat') {
+          badgeHtml = '<span style="background:#E0F2FE; color:#0369A1; padding:3px 8px; border-radius:6px; font-weight:700; font-size:11px; display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-comments"></i> Trò chuyện</span>';
+        } else if (cat === 'scenario') {
+          badgeHtml = '<span style="background:#EDE9FE; color:#6D28D9; padding:3px 8px; border-radius:6px; font-weight:700; font-size:11px; display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-lightbulb"></i> Tình huống</span>';
         } else {
           badgeHtml = '<span style="background:#F1F5F9; color:#475569; padding:3px 8px; border-radius:6px; font-weight:700; font-size:11px; display:inline-flex; align-items:center; gap:5px;"><i class="fa-solid fa-bolt"></i> Tương tác</span>';
         }

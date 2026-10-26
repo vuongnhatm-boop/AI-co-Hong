@@ -281,6 +281,12 @@
   async function saveChatMessage(sender, content, mode = 'auto', metaTag = '') {
     logEvent('send_message', { sender, mode, has_meta: !!metaTag });
 
+    // Tự động ghi nhận mọi tin nhắn từ học sinh vào Nhật ký tương tác Live Stream
+    if (sender === 'user' && content && content.trim() !== 'quanli' && content.trim() !== 'quanly') {
+      const displayContent = content.length > 55 ? content.slice(0, 55) + '...' : content;
+      logStudentActivity(`Trò chuyện: "${displayContent}"`, 'chat', metaTag || 'Hỏi đáp AI CHẠM');
+    }
+
     if (!db) return;
 
     try {
