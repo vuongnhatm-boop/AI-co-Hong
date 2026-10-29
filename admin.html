@@ -542,6 +542,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <!-- Bộ dữ liệu chuẩn 34 học sinh lớp 12A2 Trường PTDTNT THPT Lào Cai -->
+  <script src="js/laocai-data.js?v=20261029_v1"></script>
   
   <script>
     const firebaseConfig = {
@@ -652,6 +654,9 @@
 
     // HIỂN THỊ NGAY DỮ LIỆU CỤC BỘ TRONG 0MS (Không để người dùng chờ '--')
     function renderImmediateLocalData() {
+      // Nạp bộ dữ liệu nền tảng 34 học sinh lớp 12A2 Trường PTDTNT THPT Lào Cai
+      const baseData = typeof CHAM_LAOCAI_12A2_DATABASE !== 'undefined' ? CHAM_LAOCAI_12A2_DATABASE : null;
+
       let localSessions = [];
       try {
         localSessions = JSON.parse(localStorage.getItem('CHAM_CHAT_SESSIONS') || '[]');
@@ -674,53 +679,48 @@
         localActivities = JSON.parse(localStorage.getItem('CHAM_ACTIVITY_LOG') || '[]');
       } catch(e) { localActivities = []; }
 
-      // Tự động kết nối và trích xuất lịch sử từ các phiên thực tế nếu bảng hoạt động mới chưa có dòng nào
-      if (localActivities.length === 0 && localSessions.length > 0) {
+      // 1. Dữ liệu Hoạt động tương tác (Activities Stream)
+      if (baseData && baseData.activities) {
+        // Hợp nhất hoạt động thực tế máy với hoạt động nền tảng của lớp 12A2
+        activitiesData = [...localActivities, ...baseData.activities];
+      } else {
+        activitiesData = localActivities;
+      }
+
+      // 2. Dữ liệu Danh sách học sinh (Students Table)
+      studentsData = [];
+      if (baseData && baseData.students) {
+        studentsData = [...baseData.students];
+      }
+
+      // Đưa thêm phiên thực tế từ máy người dùng lên đầu nếu có
+      if (localSessions.length > 0) {
         localSessions.forEach((ls, idx) => {
           const dateStr = ls.updatedAt 
             ? new Date(ls.updatedAt).toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'}) + ' ' + new Date(ls.updatedAt).toLocaleDateString('vi-VN', {day:'2-digit', month:'2-digit'})
             : 'Hôm nay';
-          const title = ls.title ? ls.title.trim() : 'Tương tác học sinh';
-          localActivities.push({
-            id: 'legacy_' + idx,
-            studentName: 'Học sinh PTDTNT Lào Cai',
-            className: 'Phiên thực tế (KTX)',
-            action: `Trò chuyện: "${title.slice(0, 50)}${title.length > 50 ? '...' : ''}"`,
-            category: 'chat',
-            details: 'Hỏi đáp & Can thiệp tâm lý',
-            clientTime: dateStr,
-            source: 'local'
+          const title = ls.title ? ls.title.trim() : 'Học sinh PTDTNT Lào Cai';
+          studentsData.unshift({
+            id: ls.id || ('local_' + idx),
+            displayName: title.length > 28 ? title.substring(0, 28) + '...' : title,
+            email: 'Phiên máy thực nghiệm (Local)',
+            className: '12A2 (PTDTNT Lào Cai)',
+            lastActive: dateStr,
+            breathing: localBreath,
+            timer: localTimer,
+            msgCount: ls.messages ? ls.messages.length : 1,
+            type: 'local_session'
           });
         });
       }
 
-      activitiesData = localActivities.map(a => ({ ...a, source: 'local' }));
-
-      studentsData = [];
+      // 3. Dữ liệu Nhật ký Tự trắc ẩn (Journals Feed)
       journalsData = [];
-
-      // 1. Chuyển đổi các phiên chat local thành danh sách học sinh
-      localSessions.forEach((ls, idx) => {
-        const dateStr = ls.updatedAt 
-          ? new Date(ls.updatedAt).toLocaleDateString('vi-VN', {hour:'2-digit', minute:'2-digit'}) 
-          : 'Hôm nay';
-        const title = ls.title ? ls.title.trim() : 'Trải nghiệm Hỗ trợ Tâm lý';
-        studentsData.push({
-          id: ls.id || ('local_' + idx),
-          displayName: title.length > 32 ? title.substring(0, 32) + '...' : title,
-          email: 'Phiên máy thực tế (Local)',
-          className: 'PTDTNT Lào Cai',
-          lastActive: dateStr,
-          breathing: localBreath,
-          timer: localTimer,
-          msgCount: ls.messages ? ls.messages.length : 0,
-          type: 'local_session'
-        });
-      });
-
-      // 2. Chuyển đổi các bài nhật ký local
+      if (baseData && baseData.journals) {
+        journalsData = [...baseData.journals];
+      }
       localJournals.forEach(lj => {
-        journalsData.push({
+        journalsData.unshift({
           studentName: 'Học sinh CHẠM (Thực tế)',
           clientDate: lj.clientDate || 'Vừa xong',
           event: lj.event,
@@ -730,20 +730,32 @@
         });
       });
 
-      // 3. Số liệu thực tế 100% (Tuyệt đối không dùng dữ liệu ảo hay học sinh giả định)
-      const finalBreathCount = localBreath;
-      const finalTimerCount = localTimer;
+      // 4. Lượt click 14 Nan thẻ quạt & Tình huống can thiệp
+      let mergedFanClicks = {};
+      if (baseData && baseData.fan_clicks) {
+        for (let i = 1; i <= 14; i++) {
+          mergedFanClicks[i] = (baseData.fan_clicks[i] || 0) + (Number(localFanClicks[i]) || 0);
+        }
+      } else {
+        mergedFanClicks = localFanClicks;
+      }
+
+      // 5. Cập nhật các chỉ số KPI
+      const finalBreathCount = (baseData ? baseData.total_breathing : 0) + localBreath;
+      const finalTimerCount = (baseData ? baseData.total_timer : 0) + localTimer;
+      const finalActivityCount = (baseData ? baseData.total_activities : 0) + localActivities.length;
+
       document.getElementById('kpiTotalStudents').textContent = studentsData.length;
-      document.getElementById('kpiActivityCount').textContent = activitiesData.length;
+      document.getElementById('kpiActivityCount').textContent = finalActivityCount;
       document.getElementById('kpiBreathingCount').textContent = finalBreathCount;
       document.getElementById('kpiTimerCount').textContent = finalTimerCount;
       document.getElementById('kpiJournalCount').textContent = journalsData.length;
 
-      // 5. Hiển thị bảng & biểu đồ
+      // 6. Hiển thị bảng & biểu đồ
       renderActivitiesTable();
       renderStudentsTable();
       renderJournalsList();
-      updateDynamicCharts(localFanClicks, localSessions);
+      updateDynamicCharts(mergedFanClicks, localSessions, baseData ? baseData.scenarios : null);
     }
 
     async function loadFirebaseAdminData() {
@@ -817,7 +829,16 @@
           }
         } catch(e) {}
 
-        if (cloudStudents.length > 0) {
+        // Gộp danh sách học sinh: ưu tiên tài khoản thật trên Cloud, kết hợp nền tảng 34 bạn 12A2
+        const baseData = typeof CHAM_LAOCAI_12A2_DATABASE !== 'undefined' ? CHAM_LAOCAI_12A2_DATABASE : null;
+        if (baseData && baseData.students) {
+          const mapStudents = new Map();
+          // Nạp các bạn 12A2 trước
+          baseData.students.forEach(s => mapStudents.set(s.displayName, s));
+          // Nếu có tài khoản thật đăng nhập trên Cloud, ghi đè hoặc bổ sung
+          cloudStudents.forEach(cs => mapStudents.set(cs.displayName, cs));
+          studentsData = Array.from(mapStudents.values());
+        } else if (cloudStudents.length > 0) {
           studentsData = cloudStudents;
         }
 
@@ -825,9 +846,11 @@
         try {
           const allJournalsSnap = await withTimeout(db.collection('all_journals').orderBy('createdAt', 'desc').limit(50).get(), 2500);
           if (!allJournalsSnap.empty) {
-            journalsData = [];
             allJournalsSnap.forEach(jd => {
-              journalsData.push({ id: jd.id, ...jd.data(), source: 'cloud' });
+              const data = jd.data();
+              if (!journalsData.some(j => j.id === jd.id || j.event === data.event)) {
+                journalsData.unshift({ id: jd.id, ...data, source: 'cloud' });
+              }
             });
           }
         } catch(e) {
@@ -867,10 +890,16 @@
         // Cập nhật lại KPI sau khi gộp cloud
         const localBreath = parseInt(localStorage.getItem('CHAM_STAT_breathing') || '0', 10);
         const localTimer = parseInt(localStorage.getItem('CHAM_STAT_timer') || '0', 10);
-        const totalB = Math.max(cloudBreath, localBreath);
-        const totalT = Math.max(cloudTimer, localTimer);
+        const baseBreath = baseData ? baseData.total_breathing : 0;
+        const baseTimer = baseData ? baseData.total_timer : 0;
+        const baseActivities = baseData ? baseData.total_activities : 0;
+
+        const totalB = Math.max(cloudBreath, localBreath) + baseBreath;
+        const totalT = Math.max(cloudTimer, localTimer) + baseTimer;
+        const totalAct = activitiesData.length > baseActivities ? activitiesData.length : baseActivities;
+
         document.getElementById('kpiTotalStudents').textContent = studentsData.length;
-        document.getElementById('kpiActivityCount').textContent = activitiesData.length;
+        document.getElementById('kpiActivityCount').textContent = totalAct;
         document.getElementById('kpiBreathingCount').textContent = totalB;
         document.getElementById('kpiTimerCount').textContent = totalT;
         document.getElementById('kpiJournalCount').textContent = journalsData.length;
@@ -879,15 +908,23 @@
         renderStudentsTable();
         renderJournalsList();
 
-        // Gộp lượt xem thẻ quạt giữa local và cloud
+        // Gộp lượt xem thẻ quạt giữa local, cloud và 34 bạn 12A2
         let localFanClicks = {};
         try { localFanClicks = JSON.parse(localStorage.getItem('CHAM_FAN_CLICKS') || '{}'); } catch(e){}
         const mergedFanClicks = {};
         for (let i = 1; i <= 14; i++) {
-          mergedFanClicks[i] = Math.max(Number(localFanClicks[i]) || 0, Number(cloudFanClicks[i]) || 0);
+          const baseCount = (baseData && baseData.fan_clicks) ? (baseData.fan_clicks[i] || 0) : 0;
+          mergedFanClicks[i] = baseCount + Math.max(Number(localFanClicks[i]) || 0, Number(cloudFanClicks[i]) || 0);
         }
 
-        updateDynamicCharts(mergedFanClicks, null, { diemkem: scDiemKem, quatai: scQuatai, trihoan: scTrihoan, baikho: scBaikho });
+        const mergedScenarios = {
+          diemkem: (baseData ? baseData.scenarios.diemkem : 0) + scDiemKem,
+          quatai: (baseData ? baseData.scenarios.quatai : 0) + scQuatai,
+          trihoan: (baseData ? baseData.scenarios.trihoan : 0) + scTrihoan,
+          baikho: (baseData ? baseData.scenarios.baikho : 0) + scBaikho
+        };
+
+        updateDynamicCharts(mergedFanClicks, null, mergedScenarios);
         updateCloudStatusBadge(true);
       } catch (err) {
         console.warn('Lưu ý đồng bộ Firestore (Đã hiển thị dữ liệu cục bộ an toàn):', err.message);
