@@ -46,26 +46,31 @@ document.addEventListener('DOMContentLoaded', () => {
   const apiKeyInput = document.getElementById('apiKeyInput');
   const toggleShowKeyBtn = document.getElementById('toggleShowKeyBtn');
 
-  // API Key & Model Configuration (Gemini 2.5 Active)
-  const _k = 'QVEuQWI4Uk42SlhWLW9RQVZqZmh4eUtLSjdHT21PMkFaOFJwaUZoalphaXRvME9Tb2FLSWc=';
-  const DEFAULT_API_KEY = typeof atob === 'function' ? atob(_k) : '';
+  // API Key & Model Configuration (Hệ thống 2 Key: 1 Chính + 1 Dự phòng)
+  const _k1 = 'QVEuQWI4Uk42TDJiVXhESDJ0dmZDMTlEcUF4N1FtNkFSRkxrQ2JieTVmOWZtemVCdWpVMmc='; // Key chính
+  const _k2 = 'QVEuQWI4Uk42SzNQVXFBR1R6OVhIbnZGNnRmVmlhV2JoTWVzdkZ2RzRZTEJWVzhVYURNYWc='; // Key dự phòng
+  const PRIMARY_API_KEY = typeof atob === 'function' ? atob(_k1) : '';
+  const BACKUP_API_KEY = typeof atob === 'function' ? atob(_k2) : '';
+
+  // Xóa bỏ hoàn toàn key cũ khỏi bộ nhớ nếu còn lưu vết
+  const OLD_KEY_SIG = 'AQ.Ab8RN6JXV';
   let storedKey = localStorage.getItem('CHAM_GEMINI_API_KEY');
-  // Nếu key rỗng hoặc không phải key của hệ thống, tự động đặt lại key mặc định
-  if (!storedKey || (!storedKey.startsWith('AIzaSy') && storedKey !== DEFAULT_API_KEY)) {
-    storedKey = DEFAULT_API_KEY;
-    localStorage.setItem('CHAM_GEMINI_API_KEY', DEFAULT_API_KEY);
+  if (!storedKey || storedKey.includes(OLD_KEY_SIG) || (!storedKey.startsWith('AIzaSy') && !storedKey.startsWith('AQ.'))) {
+    storedKey = PRIMARY_API_KEY;
+    localStorage.setItem('CHAM_GEMINI_API_KEY', PRIMARY_API_KEY);
   }
   let activeApiKey = storedKey;
   if (apiKeyInput) apiKeyInput.value = activeApiKey;
 
   // Cập nhật huy hiệu AI ban đầu ngay khi tải trang
-  updateAiBadge(true, 'Gemini 2.5 Active');
+  updateAiBadge(true, 'Gemini AI Active');
 
-  // Official Google Gemini models order (Gemini 2.5 thế hệ mới)
+  // Danh sách các mô hình Google Gemini chính thức hỗ trợ
   const GEMINI_MODELS = [
+    'gemini-3.8-flash',
+    'gemini-flash-latest',
     'gemini-2.5-flash',
     'gemini-2.5-pro',
-    'gemini-flash-latest',
     'gemini-pro-latest'
   ];
 
@@ -136,33 +141,65 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     let lastError = null;
-    for (const modelName of GEMINI_MODELS) {
-      try {
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${activeApiKey}`;
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
+    // Danh sách API Key dự phòng đa tầng (1 Chính + 1 Dự phòng)
+    const candidateKeys = [activeApiKey];
+    if (activeApiKey !== BACKUP_API_KEY && BACKUP_API_KEY) {
+      candidateKeys.push(BACKUP_API_KEY);
+    } else if (activeApiKey !== PRIMARY_API_KEY && PRIMARY_API_KEY) {
+      candidateKeys.push(PRIMARY_API_KEY);
+    }
 
-        const data = await response.json();
+    for (let kIdx = 0; kIdx < candidateKeys.length; kIdx++) {
+      const currentTryKey = candidateKeys[kIdx];
+      let keyQuotaExceeded = false;
 
-        if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
-          const botReply = data.candidates[0].content.parts[0].text;
-          conversationHistory.push({
-            role: 'model',
-            parts: [{ text: botReply }]
+      for (const modelName of GEMINI_MODELS) {
+        try {
+          const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${currentTryKey}`;
+          const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
           });
 
-          updateAiBadge(true, `Gemini (${modelName.replace('gemini-', '')})`);
-          return { success: true, text: botReply };
-        } else if (data.error) {
-          lastError = data.error.message || JSON.stringify(data.error);
-          console.warn(`Model ${modelName} returned error:`, lastError);
+          const data = await response.json();
+
+          if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+            const botReply = data.candidates[0].content.parts[0].text;
+            conversationHistory.push({
+              role: 'model',
+              parts: [{ text: botReply }]
+            });
+
+            // Nếu đã chuyển sang key dự phòng và thành công, lưu lại key đang chạy mượt mà
+            if (currentTryKey !== activeApiKey) {
+              activeApiKey = currentTryKey;
+              localStorage.setItem('CHAM_GEMINI_API_KEY', currentTryKey);
+              if (apiKeyInput) apiKeyInput.value = currentTryKey;
+              console.log('🔄 Đã tự động chuyển sang API Key dự phòng hoạt động ổn định!');
+            }
+
+            const modelLabel = modelName.replace('gemini-', '');
+            updateAiBadge(true, `Gemini (${modelLabel}${kIdx > 0 ? ' • Dự phòng' : ''})`);
+            return { success: true, text: botReply };
+          } else if (data.error) {
+            lastError = data.error.message || JSON.stringify(data.error);
+            console.warn(`Model ${modelName} returned error with key ${kIdx + 1}:`, lastError);
+
+            // Kiểm tra lỗi hạn ngạch (429) hoặc phân quyền (403/400) để chuyển ngay sang key dự phòng
+            if (data.error.code === 429 || data.error.code === 403 || data.error.status === 'RESOURCE_EXHAUSTED' || data.error.status === 'PERMISSION_DENIED') {
+              keyQuotaExceeded = true;
+              break;
+            }
+          }
+        } catch (err) {
+          lastError = err.message;
+          console.warn(`Fetch to ${modelName} failed with key ${kIdx + 1}:`, err);
         }
-      } catch (err) {
-        lastError = err.message;
-        console.warn(`Fetch to ${modelName} failed:`, err);
+      }
+
+      if (kIdx === 0 && candidateKeys.length > 1) {
+        console.warn('⚠️ Key chính gặp sự cố, tự động kích hoạt API Key dự phòng...');
       }
     }
 

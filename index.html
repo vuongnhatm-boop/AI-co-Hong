@@ -286,7 +286,7 @@
           
           <div class="ai-status-pill" id="aiStatusPill" onclick="document.getElementById('openApiKeyModalBtn').click()" style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; padding:6px 12px; border-radius:20px; border:1px solid #10B981; background:rgba(16,185,129,0.12); color:#059669; cursor:pointer;" title="Bấm để xem hoặc đổi API Key">
             <span style="width:8px; height:8px; border-radius:50%; background:#10B981; display:inline-block;"></span>
-            <span id="aiStatusText">Gemini 2.5 Active</span>
+            <span id="aiStatusText">Gemini AI Active</span>
           </div>
 
           <button class="icon-btn" id="openApiKeyModalBtn" title="Cài đặt API Key">
@@ -637,7 +637,7 @@
 
         <div style="margin-bottom: 16px;">
           <label style="display:block; font-size:12.5px; font-weight:700; margin-bottom:6px; color:var(--text-primary);">Gemini API Key của bạn:</label>
-          <input type="password" id="apiKeyInput" style="width:100%; padding:10px 12px; border:1px solid var(--border-light); border-radius:var(--radius-sm); font-size:13px; font-family:monospace;" placeholder="Dán API Key (bắt đầu bằng AIzaSy...) vào đây">
+          <input type="password" id="apiKeyInput" style="width:100%; padding:10px 12px; border:1px solid var(--border-light); border-radius:var(--radius-sm); font-size:13px; font-family:monospace;" placeholder="Dán API Key (bắt đầu bằng AQ. hoặc AIzaSy...) vào đây">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
             <span style="font-size:11px; color:var(--sage-600); font-weight:600;"><i class="fa-solid fa-shield-halved"></i> Key được lưu an toàn trên trình duyệt của bạn</span>
             <button type="button" id="toggleShowKeyBtn" style="background:none; border:none; font-size:11.5px; color:var(--text-secondary); cursor:pointer;">Hiện / Ẩn Key</button>
@@ -822,9 +822,9 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
-  <!-- Scripts ứng dụng CHẠM (v20261026_v6 - Quick Search & Live Activity Stream) -->
-  <script src="js/firebase-service.js?v=20261026_v6"></script>
-  <script src="js/knowledge-base.js?v=20261026_v6"></script>
-  <script src="js/app.js?v=20261026_v6"></script>
+  <!-- Scripts ứng dụng CHẠM (v20261102_v1 - Dual API Keys Support) -->
+  <script src="js/firebase-service.js?v=20261102_v1"></script>
+  <script src="js/knowledge-base.js?v=20261102_v1"></script>
+  <script src="js/app.js?v=20261102_v1"></script>
 </body>
 </html>
