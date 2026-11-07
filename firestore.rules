@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Hoạt động tương tác & thống kê chung của trường Lào Cai
+    match /activities/{docId} {
+      allow read: if true;
+      allow create: if request.resource.data.action is string;
+    }
+    
+    match /school_stats/{statId} {
+      allow read, write: if true;
+    }
+
+    // 2. Hội thoại & tin nhắn của học sinh (khách hoặc đăng nhập)
+    match /conversations/{sessionId}/{allChildren=**} {
+      allow read, write: if sessionId != '';
+    }
+
+    // 3. Nhật ký cảm xúc và hồ sơ người dùng
+    match /users/{userId}/{allChildren=**} {
+      allow read: if true;
+      allow write: if request.auth != null ? request.auth.uid == userId : true;
+    }
+
+    match /journals/{journalId} {
+      allow read, write: if true;
+    }
+  }
+}
