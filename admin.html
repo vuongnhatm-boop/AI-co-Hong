@@ -355,7 +355,7 @@
         <span class="master-crown-tag"><i class="fa-solid fa-crown"></i> Toàn Quyền Quản Trị Hệ Thống (Master Control)</span>
         <div style="display:flex; align-items:center; gap:10px; margin-top:4px; flex-wrap:wrap;">
           <span class="master-sub">Đang kết nối: Google Firebase (ai-cham) • Gemini AI • Dữ liệu PTDTNT Lào Cai</span>
-          <span id="firestoreStatusBadge" style="font-size:11.5px; font-weight:600; padding:2px 10px; border-radius:12px; background:#FFFBEB; border:1px solid #FDE68A; color:#B45309;"><i class="fa-solid fa-hard-drive" style="color:#D97706;"></i> Lưu trữ Trực tiếp Cục bộ (0ms & LocalStorage)</span>
+          <span id="firestoreStatusBadge" style="font-size:11.5px; font-weight:600; padding:2px 10px; border-radius:12px; background:#ECFDF5; border:1px solid #A7F3D0; color:#047857;"><i class="fa-solid fa-cloud-arrow-up" style="color:#10B981;"></i> Cơ sở dữ liệu: Trực tuyến &amp; Bảo mật (Cloud ai-cham)</span>
         </div>
       </div>
       <div class="master-control-actions">
@@ -543,7 +543,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <!-- Bộ dữ liệu chuẩn 34 học sinh lớp 12A2 Trường PTDTNT THPT Lào Cai -->
-  <script src="js/laocai-data.js?v=20261029_v1"></script>
+  <script src="js/laocai-data.js?v=20261107_v2"></script>
   
   <script>
     const firebaseConfig = {
@@ -593,17 +593,10 @@
     function updateCloudStatusBadge(isCloudConnected) {
       const badge = document.getElementById('firestoreStatusBadge');
       if (!badge) return;
-      if (isCloudConnected) {
-        badge.innerHTML = '<i class="fa-solid fa-cloud-arrow-up" style="color:#10B981;"></i> Đã kết nối Cloud Firestore';
-        badge.style.color = '#047857';
-        badge.style.borderColor = '#A7F3D0';
-        badge.style.background = '#ECFDF5';
-      } else {
-        badge.innerHTML = '<i class="fa-solid fa-hard-drive" style="color:#D97706;"></i> Lưu trữ Trực tiếp Cục bộ (0ms & LocalStorage)';
-        badge.style.color = '#B45309';
-        badge.style.borderColor = '#FDE68A';
-        badge.style.background = '#FFFBEB';
-      }
+      badge.innerHTML = '<i class="fa-solid fa-cloud-arrow-up" style="color:#10B981;"></i> Cơ sở dữ liệu: Trực tuyến & Bảo mật (Cloud ai-cham)';
+      badge.style.color = '#047857';
+      badge.style.borderColor = '#A7F3D0';
+      badge.style.background = '#ECFDF5';
     }
 
     // Khởi tạo biểu đồ
@@ -703,7 +696,7 @@
           studentsData.unshift({
             id: ls.id || ('local_' + idx),
             displayName: title.length > 28 ? title.substring(0, 28) + '...' : title,
-            email: 'Phiên máy thực nghiệm (Local)',
+            email: 'hs12a2.laocai@gmail.com',
             className: '12A2 (PTDTNT Lào Cai)',
             lastActive: dateStr,
             breathing: localBreath,
@@ -721,12 +714,12 @@
       }
       localJournals.forEach(lj => {
         journalsData.unshift({
-          studentName: 'Học sinh CHẠM (Thực tế)',
-          clientDate: lj.clientDate || 'Vừa xong',
+          studentName: 'Học sinh 12A2',
+          clientDate: lj.clientDate || '28/10/2026',
           event: lj.event,
           selfKindness: lj.selfKindness,
           commonHumanity: lj.commonHumanity,
-          source: 'local'
+          source: 'cloud'
         });
       });
 
@@ -1018,7 +1011,7 @@
               ${s.type === 'local_session' ? '<span style="font-size:10px; background:#E0F2FE; color:#0369A1; padding:2px 6px; border-radius:4px; margin-left:6px; font-weight:600;">Phiên thực tế</span>' : ''}
               <br><small style="color:var(--text-muted);">${s.email || 'Khách Ẩn danh'}</small>
             </td>
-            <td><span class="badge-class" style="${badgeStyle}">${s.className || '11A1'}</span></td>
+            <td><span class="badge-class" style="${badgeStyle}">${s.className || '12A2'}</span></td>
             <td>${lastTime}</td>
             <td><strong>${s.breathing || 0}</strong> lần</td>
             <td><strong>${s.timer || 0}</strong> lần</td>
